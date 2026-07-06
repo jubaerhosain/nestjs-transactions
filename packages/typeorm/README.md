@@ -1,11 +1,11 @@
-# @nestjs-transactional/typeorm
+# @nestjs-transactions/typeorm
 
 **Silent `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. A drop-in replacement DX for the abandoned [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional), built entirely on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — standard NestJS DI, **zero monkey-patching**.
 
 ## Install
 
 ```bash
-npm install @nestjs-transactional/typeorm @nestjs-transactional/core \
+npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
   @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
@@ -15,7 +15,7 @@ npm install @nestjs-transactional/typeorm @nestjs-transactional/core \
 
 ```ts
 // app.module.ts
-import { TransactionalModule } from '@nestjs-transactional/typeorm';
+import { TransactionalModule } from '@nestjs-transactions/typeorm';
 
 @Module({
   imports: [
@@ -37,7 +37,7 @@ export class MemberModule {}
 
 ```ts
 // member.service.ts — completely vanilla NestJS + TypeORM
-import { Transactional } from '@nestjs-transactional/typeorm';
+import { Transactional } from '@nestjs-transactions/typeorm';
 
 @Injectable()
 export class MemberService {
@@ -64,7 +64,7 @@ If `register` throws, everything rolls back — including writes made in `Accoun
 ## Propagation
 
 ```ts
-import { Propagation, Transactional } from '@nestjs-transactional/typeorm';
+import { Propagation, Transactional } from '@nestjs-transactions/typeorm';
 
 @Transactional(Propagation.RequiresNew)
 async audit(entry: AuditEntry) { /* commits even if the caller rolls back */ }
@@ -123,7 +123,7 @@ If the connection name must differ from the data source name, use the object for
 ## Programmatic control
 
 ```ts
-import { TransactionHost, TypeOrmTransactionHost } from '@nestjs-transactional/typeorm';
+import { TransactionHost, TypeOrmTransactionHost } from '@nestjs-transactions/typeorm';
 
 constructor(private readonly txHost: TypeOrmTransactionHost) {}
 
@@ -139,7 +139,7 @@ For a named connection inject with `@InjectTransactionHost('stats')`.
 `repo.extend()` and hand-rolled repository classes hold a fixed `EntityManager` and can't be silently intercepted. Extend the base class instead:
 
 ```ts
-import { TransactionAwareRepository } from '@nestjs-transactional/typeorm';
+import { TransactionAwareRepository } from '@nestjs-transactions/typeorm';
 
 @Injectable()
 export class MemberRepository extends TransactionAwareRepository<Member> {
@@ -154,7 +154,7 @@ export class MemberRepository extends TransactionAwareRepository<Member> {
 ## Testing
 
 ```ts
-import { createNoOpTypeOrmTransactionalModule } from '@nestjs-transactional/typeorm/testing';
+import { createNoOpTypeOrmTransactionalModule } from '@nestjs-transactions/typeorm/testing';
 
 const repoMock = { save: jest.fn() };
 const moduleRef = await Test.createTestingModule({
@@ -172,7 +172,7 @@ const moduleRef = await Test.createTestingModule({
 
 ## Migrating from `typeorm-transactional`
 
-| | `typeorm-transactional` | `@nestjs-transactional/typeorm` |
+| | `typeorm-transactional` | `@nestjs-transactions/typeorm` |
 |---|---|---|
 | Bootstrap | `initializeTransactionalContext()` before everything | `TransactionalModule.forRoot()` in `AppModule` |
 | DataSource | `addTransactionalDataSource(ds)` | automatic (uses `@nestjs/typeorm` tokens) |

@@ -1,6 +1,6 @@
 import { FactoryProvider } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConnectionRegistry } from '@nestjs-transactional/core';
+import { ConnectionRegistry } from '@nestjs-transactions/core';
 import { TransactionalModule } from '../../src/transactional.module';
 
 class Member {}

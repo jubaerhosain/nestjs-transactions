@@ -1,7 +1,7 @@
 import {
   TransactionalAsyncOptionsBase,
   TransactionalRootOptionsBase,
-} from '@nestjs-transactional/core';
+} from '@nestjs-transactions/core';
 import { TypeOrmTransactionOptions } from '@nestjs-cls/transactional-adapter-typeorm';
 import { ModuleMetadata } from '@nestjs/common';
 import { DataSource, DataSourceOptions } from 'typeorm';

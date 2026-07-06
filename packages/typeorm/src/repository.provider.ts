@@ -5,7 +5,7 @@ import {
   createTransactionAwareProxy,
   getTransactionHostToken,
   TransactionHost,
-} from '@nestjs-transactional/core';
+} from '@nestjs-transactions/core';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { EntityManager } from 'typeorm';
 import { ForFeatureConnection, normalizeForFeatureConnection } from './interfaces';

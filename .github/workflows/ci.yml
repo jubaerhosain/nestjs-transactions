@@ -61,7 +61,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
-      - run: pnpm --filter @nestjs-transactional/typeorm test:int
+      - run: pnpm --filter @nestjs-transactions/typeorm test:int
         env:
           PG_A_PORT: '54321'
           PG_B_PORT: '54322'

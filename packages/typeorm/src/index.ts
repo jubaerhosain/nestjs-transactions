@@ -1,5 +1,5 @@
 // The uniform user-facing surface — identical symbol identity across all
-// @nestjs-transactional adapter packages (re-exported from core).
+// @nestjs-transactions adapter packages (re-exported from core).
 export {
   InjectTransaction,
   InjectTransactionHost,
@@ -12,8 +12,8 @@ export {
   getTransactionHostToken,
   getTransactionToken,
   ConnectionRegistry,
-} from '@nestjs-transactional/core';
-export type { Transaction } from '@nestjs-transactional/core';
+} from '@nestjs-transactions/core';
+export type { Transaction } from '@nestjs-transactions/core';
 
 // The module: forRoot / forRootAsync / forFeature
 export { TransactionalModule } from './transactional.module';
@@ -31,6 +31,6 @@ export { TransactionAwareRepository } from './transaction-aware.repository';
 // Advanced: the underlying adapter and a typed TransactionHost alias
 export { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 export type { TypeOrmTransactionOptions } from '@nestjs-cls/transactional-adapter-typeorm';
-import type { TransactionHost } from '@nestjs-transactional/core';
+import type { TransactionHost } from '@nestjs-transactions/core';
 import type { TransactionalAdapterTypeOrm as _TypeOrmAdapter } from '@nestjs-cls/transactional-adapter-typeorm';
 export type TypeOrmTransactionHost = TransactionHost<_TypeOrmAdapter>;

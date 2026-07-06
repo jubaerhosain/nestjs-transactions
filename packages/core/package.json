@@ -1,12 +1,12 @@
 {
-  "name": "@nestjs-transactional/core",
+  "name": "@nestjs-transactions/core",
   "version": "0.1.0",
   "description": "ORM-agnostic building blocks for silent transaction propagation in NestJS, built on @nestjs-cls/transactional",
   "license": "MIT",
   "author": "Jubaer Hosain",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jubaerhosain/nestjs-transactional.git",
+    "url": "git+https://github.com/jubaerhosain/nestjs-transactions.git",
     "directory": "packages/core"
   },
   "keywords": [

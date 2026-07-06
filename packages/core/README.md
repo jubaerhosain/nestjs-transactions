@@ -1,10 +1,10 @@
-# @nestjs-transactional/core
+# @nestjs-transactions/core
 
-ORM-agnostic building blocks for the `@nestjs-transactional` adapter family, built on [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional).
+ORM-agnostic building blocks for the `@nestjs-transactions` adapter family, built on [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional).
 
 **You don't import from this package directly** — install it as a peer of an adapter and import everything from there:
 
-- [`@nestjs-transactional/typeorm`](https://www.npmjs.com/package/@nestjs-transactional/typeorm) — silent `@InjectRepository` repositories for TypeORM
+- [`@nestjs-transactions/typeorm`](https://www.npmjs.com/package/@nestjs-transactions/typeorm) — silent `@InjectRepository` repositories for TypeORM
 
 ## What it provides
 
@@ -12,12 +12,12 @@ ORM-agnostic building blocks for the `@nestjs-transactional` adapter family, bui
 - `createTransactionalModule(definition)` — the factory adapter packages use to produce their own `TransactionalModule` (`forRoot`/`forRootAsync`), wired through `ClsModule.registerPlugins` so it composes with a host app's own `nestjs-cls` setup.
 - `createTransactionAwareProxy(resolve, base?)` — the lazy proxy primitive that re-resolves its target on every property access.
 - `ConnectionRegistry` — duplicate-registration diagnostics.
-- `@nestjs-transactional/core/testing` — `createNoOpTransactionalModule` for unit tests without real transactions.
+- `@nestjs-transactions/core/testing` — `createNoOpTransactionalModule` for unit tests without real transactions.
 
 ## Writing an adapter
 
 ```ts
-import { createTransactionalModule } from '@nestjs-transactional/core';
+import { createTransactionalModule } from '@nestjs-transactions/core';
 
 const Base = createTransactionalModule<MyOrmOptions>({
   adapterFactory: (options) => ({

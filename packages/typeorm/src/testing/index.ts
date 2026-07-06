@@ -1,11 +1,11 @@
 import { DynamicModule, FactoryProvider } from '@nestjs/common';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
-import { createNoOpTransactionalModule } from '@nestjs-transactional/core/testing';
+import { createNoOpTransactionalModule } from '@nestjs-transactions/core/testing';
 import { EntityManager } from 'typeorm';
 import { ForFeatureConnection } from '../interfaces';
 import { provideTransactionAwareRepository } from '../repository.provider';
 
-export { createNoOpTransactionalModule, NoOpTransactionalAdapter } from '@nestjs-transactional/core/testing';
+export { createNoOpTransactionalModule, NoOpTransactionalAdapter } from '@nestjs-transactions/core/testing';
 
 export interface NoOpTypeOrmTransactionalOptions {
   /**

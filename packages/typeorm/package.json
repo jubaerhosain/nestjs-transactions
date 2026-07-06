@@ -1,12 +1,12 @@
 {
-  "name": "@nestjs-transactional/typeorm",
+  "name": "@nestjs-transactions/typeorm",
   "version": "0.1.0",
   "description": "Silent @Transactional() for NestJS + TypeORM: keep @InjectRepository, drop the boilerplate. Drop-in replacement DX for typeorm-transactional without monkey-patching.",
   "license": "MIT",
   "author": "Jubaer Hosain",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jubaerhosain/nestjs-transactional.git",
+    "url": "git+https://github.com/jubaerhosain/nestjs-transactions.git",
     "directory": "packages/typeorm"
   },
   "keywords": [
@@ -50,7 +50,7 @@
   "peerDependencies": {
     "@nestjs-cls/transactional": "^3.2.0",
     "@nestjs-cls/transactional-adapter-typeorm": "^1.3.0",
-    "@nestjs-transactional/core": "^0.1.0",
+    "@nestjs-transactions/core": "^0.1.0",
     "@nestjs/common": ">= 10 < 12",
     "@nestjs/core": ">= 10 < 12",
     "@nestjs/typeorm": ">= 10 < 12",
@@ -60,7 +60,7 @@
   "devDependencies": {
     "@nestjs-cls/transactional": "^3.2.1",
     "@nestjs-cls/transactional-adapter-typeorm": "^1.3.5",
-    "@nestjs-transactional/core": "workspace:^",
+    "@nestjs-transactions/core": "workspace:^",
     "@nestjs/common": "^11.1.3",
     "@nestjs/core": "^11.1.3",
     "@nestjs/testing": "^11.1.3",

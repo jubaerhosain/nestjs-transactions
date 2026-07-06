@@ -1,7 +1,7 @@
 import { DynamicModule, FactoryProvider } from '@nestjs/common';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
-import { createTransactionalModule } from '@nestjs-transactional/core';
+import { createTransactionalModule } from '@nestjs-transactions/core';
 import {
   TransactionalAdapterTypeOrm,
   TypeOrmTransactionOptions,

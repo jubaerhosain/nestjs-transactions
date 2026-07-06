@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionHost } from '@nestjs-transactional/core';
+import { TransactionHost } from '@nestjs-transactions/core';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { EntityManager, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
 

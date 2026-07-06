@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
-  "changelog": ["@changesets/changelog-github", { "repo": "jubaerhosain/nestjs-transactional" }],
+  "changelog": ["@changesets/changelog-github", { "repo": "jubaerhosain/nestjs-transactions" }],
   "commit": false,
   "fixed": [],
   "linked": [],

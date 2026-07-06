@@ -1,6 +1,6 @@
 import { FactoryProvider } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { getTransactionHostToken, TransactionHost } from '@nestjs-transactional/core';
+import { getTransactionHostToken, TransactionHost } from '@nestjs-transactions/core';
 import { Repository } from 'typeorm';
 import { provideTransactionAwareRepository } from '../../src/repository.provider';
 
