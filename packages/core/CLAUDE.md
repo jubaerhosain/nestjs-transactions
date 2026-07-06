@@ -17,6 +17,27 @@ from `@nestjs-cls/transactional` (`Transactional`, `TransactionHost`,
 adapter must re-export these from core, never redefine them** — that guarantees
 one symbol identity across all packages.
 
+## Transaction lifecycle hooks
+
+`src/transaction-hooks.ts` adds `typeorm-transactional`-parity hooks —
+`runOnTransactionCommit`, `runOnTransactionRollback`,
+`runOnTransactionComplete` — exported from `src/index.ts` and re-exported by
+adapters. They attach callbacks to the **current** transaction (the innermost
+active one, whatever connection it uses — like `typeorm-transactional`, the
+functions take no connection argument) via a single CLS registry key. The
+mechanism is ORM-agnostic and no monkey-patching: `applyTransactionHooks`
+(called in `buildDynamicModule`, so every adapter gets it) wraps the adapter's
+`wrapWithTransaction` and `wrapWithNestedTransaction` — whose promises resolve
+only after COMMIT/savepoint-release and reject after ROLLBACK — to fire the
+hooks. Notes: (1) for a top-level transaction the transaction instance is
+cleared before hooks run, so a commit hook that touches a repository runs on the
+**base** connection (the query runner is already released); (2) a `NESTED`
+savepoint gets its own registry, so its hooks fire on the savepoint's outcome;
+(3) async callbacks are awaited sequentially; (4) a throwing callback is caught
+and logged; (5) a non-Error rejection is normalized to `Error` for the
+callbacks; (6) registering a hook outside an active transaction (including a
+suspended `NOT_SUPPORTED`/`NEVER` scope) throws.
+
 ## Adapter-author SPI
 
 What an adapter package consumes from here:

@@ -35,6 +35,11 @@ isolationLevel? })`, matching `typeorm-transactional`'s ergonomics. It is a
   (`_AssertInSync`); if TypeORM changes its literals, `pnpm typecheck` fails here.
 - Re-exported core symbols (`Transactional`, `TransactionHost`, `Propagation`,
   error classes, token helpers) — same identity as core.
+- Transaction lifecycle hooks `runOnTransactionCommit`,
+  `runOnTransactionRollback`, `runOnTransactionComplete` — re-exported from core
+  (`typeorm-transactional` parity). Call them inside a `@Transactional()` method
+  to register callbacks that fire after the transaction commits / rolls back /
+  completes. See `packages/core/CLAUDE.md` for the mechanism.
 - `TransactionalAdapterTypeOrm` + `TypeOrmAdapter` — the underlying `@nestjs-cls`
   adapter, re-exported. `TypeOrmAdapter` is a concise alias (same symbol) for use
   in type positions like `TransactionHost<TypeOrmAdapter>`; the longer name stays

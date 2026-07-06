@@ -13,6 +13,13 @@ export {
 } from '@nestjs-transactions/core';
 export type { Transaction } from '@nestjs-transactions/core';
 
+// Transaction lifecycle hooks — same identity as core (typeorm-transactional parity).
+export {
+  runOnTransactionCommit,
+  runOnTransactionComplete,
+  runOnTransactionRollback,
+} from '@nestjs-transactions/core';
+
 // `Transactional` typed for TypeORM — a single-object API (connectionName,
 // propagation, isolationLevel) matching typeorm-transactional's ergonomics.
 export { Transactional } from './transactional';
