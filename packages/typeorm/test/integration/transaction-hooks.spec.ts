@@ -59,6 +59,16 @@ class HookService {
     }
   }
 
+  // NEVER runs `withoutTransaction` only at top level (nesting it inside an
+  // active tx throws before the body runs), so this exercises the suspended-scope
+  // guard on the NEVER path.
+  @Transactional({ propagation: Propagation.NEVER })
+  async neverRegistersHook(): Promise<void> {
+    runOnTransactionCommit(() => {
+      this.events.push('should-not-register');
+    });
+  }
+
   @Transactional({ propagation: Propagation.NESTED })
   async nestedFailsWithHooks(name: string): Promise<void> {
     runOnTransactionCommit(() => {
@@ -226,9 +236,9 @@ describe('transaction hooks (real Postgres)', () => {
   it('REQUIRED-joined inner hook fires on the outer commit', async () => {
     await service.outerJoinsInnerRequired('outer', 'inner');
 
-    // Both hooks share the outer transaction's registry and fire on its commit.
-    expect(service.events).toContain('outer-commit');
-    expect(service.events).toContain('inner-commit');
+    // Both hooks share the outer transaction's registry and fire on its single
+    // commit, in registration order (outer registers before it calls the inner).
+    expect(service.events).toEqual(['outer-commit', 'inner-commit']);
     const names = (await service.repo.find()).map((m) => m.name).sort();
     expect(names).toEqual(['inner', 'outer']);
   });
@@ -249,6 +259,12 @@ describe('transaction hooks (real Postgres)', () => {
     expect(service.events).not.toContain('should-not-register');
     // The outer transaction still commits normally.
     await expect(service.repo.count()).resolves.toBe(1);
+  });
+
+  it('throws when a hook is registered in a suspended (NEVER) top-level method', async () => {
+    await expect(service.neverRegistersHook()).rejects.toThrow(/No active transaction/);
+
+    expect(service.events).not.toContain('should-not-register');
   });
 
   it('fires a NESTED savepoint rollback hook (not its commit hook) when the savepoint rolls back', async () => {

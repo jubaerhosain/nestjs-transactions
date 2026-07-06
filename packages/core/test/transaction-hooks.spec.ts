@@ -98,6 +98,20 @@ class Service {
     });
     throw new BoomError();
   }
+
+  // A commit hook that (illegally) registers another commit hook while the
+  // hooks are draining. The re-registration must not grow the snapshot being
+  // iterated — and since the tx instance is already cleared, it throws and is
+  // swallowed/logged rather than firing.
+  @Transactional()
+  async hookRegistersHook(): Promise<void> {
+    runOnTransactionCommit(() => {
+      this.events.push('outer-hook');
+      runOnTransactionCommit(() => {
+        this.events.push('nested-hook');
+      });
+    });
+  }
 }
 
 async function bootstrap() {
@@ -109,6 +123,12 @@ async function bootstrap() {
 }
 
 describe('transaction hooks', () => {
+  // Guaranteed restore so a failing assertion in a spied test can't leak a
+  // global no-op mock (e.g. Logger.prototype.error) into later tests.
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('fires commit then complete(undefined) on success', async () => {
     const { moduleRef, service } = await bootstrap();
 
@@ -156,7 +176,23 @@ describe('transaction hooks', () => {
 
     expect(service.events).toEqual(['after-throw']);
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    errorSpy.mockRestore();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'A transaction hook threw and was ignored',
+      expect.any(Error),
+    );
+    await moduleRef.close();
+  });
+
+  it('does not fire a hook registered from inside a draining hook (snapshot guard)', async () => {
+    const { moduleRef, service } = await bootstrap();
+    const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+    await expect(service.hookRegistersHook()).resolves.toBeUndefined();
+
+    // The outer hook ran; the hook it tried to register mid-drain did not fire.
+    expect(service.events).toEqual(['outer-hook']);
+    // The illegal re-registration threw ('No active transaction') and was logged.
+    expect(errorSpy).toHaveBeenCalledTimes(1);
     await moduleRef.close();
   });
 
@@ -182,7 +218,6 @@ describe('transaction hooks', () => {
     expect(service.rollbackArg).toBeInstanceOf(BoomError);
     expect(service.completeArg).toBeInstanceOf(BoomError);
     expect(errorSpy).toHaveBeenCalledTimes(2); // both hooks threw and were logged
-    errorSpy.mockRestore();
     await moduleRef.close();
   });
 
