@@ -25,7 +25,11 @@ pnpm workspace (`pnpm-workspace.yaml` → `packages/*`).
 and error classes from `@nestjs-cls/transactional`, and every adapter re-exports
 them from `core`. Never redefine these symbols in an adapter — always re-export,
 so `@Transactional`, `TransactionHost`, `Propagation`, etc. share one identity
-across all packages.
+across all packages. **One deliberate exception:** the `typeorm` adapter wraps
+`@nestjs-cls`'s `Transactional` in its own object-form facade (a single-object
+API that resolves the positional-argument ambiguity); see
+`packages/typeorm/CLAUDE.md`. All other symbols — including core's own
+`Transactional` — remain plain re-exports.
 
 ## Commands
 

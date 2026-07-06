@@ -51,25 +51,42 @@ class MemberService {
     throw new Error('boom');
   }
 
-  @Transactional(Propagation.REQUIRES_NEW)
+  @Transactional({ propagation: Propagation.REQUIRES_NEW })
   async createIndependently(name: string): Promise<void> {
     await this.repo.save({ name });
   }
 
-  @Transactional(Propagation.MANDATORY)
+  @Transactional({ propagation: Propagation.MANDATORY })
   async requiresExistingTx(name: string): Promise<void> {
     await this.repo.save({ name });
   }
 
-  @Transactional(Propagation.NEVER)
+  @Transactional({ propagation: Propagation.NEVER })
   async mustRunWithoutTx(name: string): Promise<void> {
     await this.repo.save({ name });
   }
 
-  @Transactional(Propagation.NESTED)
+  @Transactional({ propagation: Propagation.NESTED })
   async createNested(name: string): Promise<void> {
     await this.repo.save({ name });
     throw new Error('nested boom');
+  }
+
+  @Transactional({ propagation: Propagation.NESTED })
+  async createNestedOk(name: string): Promise<void> {
+    await this.repo.save({ name });
+  }
+
+  @Transactional({ propagation: Propagation.SUPPORTS })
+  async createSupports(name: string): Promise<boolean> {
+    await this.repo.save({ name });
+    return this.txHost.isTransactionActive();
+  }
+
+  @Transactional({ propagation: Propagation.NOT_SUPPORTED })
+  async createNotSupported(name: string): Promise<boolean> {
+    await this.repo.save({ name });
+    return this.txHost.isTransactionActive();
   }
 
   @Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })
@@ -164,6 +181,44 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
 
       const names = (await service.repo.find()).map((m) => m.name);
       expect(names).toEqual(['outer']);
+    });
+
+    it('Nested (decorator) commits its savepoint when the method succeeds', async () => {
+      await service.txHost.withTransaction(async () => {
+        await service.repo.save({ name: 'outer' });
+        await service.createNestedOk('inner');
+      });
+
+      const names = (await service.repo.find()).map((m) => m.name).sort();
+      expect(names).toEqual(['inner', 'outer']);
+    });
+
+    it('Supports (decorator) runs plainly outside a tx and joins one inside', async () => {
+      await expect(service.createSupports('free')).resolves.toBe(false);
+      await expect(service.repo.count()).resolves.toBe(1);
+      await service.repo.clear();
+
+      await expect(
+        service.txHost.withTransaction(async () => {
+          await expect(service.createSupports('joined')).resolves.toBe(true);
+          throw new Error('outer boom');
+        }),
+      ).rejects.toThrow('outer boom');
+      // Joined the outer transaction, so it rolled back with it.
+      await expect(service.repo.count()).resolves.toBe(0);
+    });
+
+    it('NotSupported (decorator) suspends the tx so the write survives outer rollback', async () => {
+      await expect(
+        service.txHost.withTransaction(async () => {
+          await service.repo.save({ name: 'outer' });
+          await expect(service.createNotSupported('suspended')).resolves.toBe(false);
+          throw new Error('outer boom');
+        }),
+      ).rejects.toThrow('outer boom');
+
+      const names = (await service.repo.find()).map((m) => m.name);
+      expect(names).toEqual(['suspended']);
     });
 
     it('NotSupported suspends the transaction (write survives outer rollback)', async () => {

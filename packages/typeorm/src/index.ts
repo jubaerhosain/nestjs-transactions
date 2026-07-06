@@ -13,8 +13,10 @@ export {
 } from '@nestjs-transactions/core';
 export type { Transaction } from '@nestjs-transactions/core';
 
-// `Transactional` typed for TypeORM — no `<TransactionalAdapterTypeOrm>` needed
+// `Transactional` typed for TypeORM — a single-object API (connectionName,
+// propagation, isolationLevel) matching typeorm-transactional's ergonomics.
 export { Transactional } from './transactional';
+export type { TransactionalOptions } from './transactional';
 
 // The module: forRoot / forRootAsync / forFeature
 export { TransactionalModule } from './transactional.module';

@@ -66,7 +66,7 @@ If `register` throws, everything rolls back — including writes made in `Accoun
 ```ts
 import { Propagation, Transactional } from '@nestjs-transactions/typeorm';
 
-@Transactional(Propagation.REQUIRES_NEW)
+@Transactional({ propagation: Propagation.REQUIRES_NEW })
 async audit(entry: AuditEntry) { /* commits even if the caller rolls back */ }
 ```
 
@@ -118,13 +118,13 @@ TransactionalModule.forFeature([Stat], 'stats'),
 ```
 
 ```ts
-@Transactional('stats')                 // connection name goes FIRST
+@Transactional({ connectionName: 'stats' })
 async recordStats() { /* wraps only the stats DataSource */ }
 ```
 
-The object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are equivalent to the
-string form — each side defaults to the other. If the connection name must differ from the data
-source name, pass both explicitly:
+For `forFeature`, the object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are
+equivalent to the string form — each side defaults to the other. If the connection name must differ
+from the data source name, pass both explicitly:
 `TransactionalModule.forFeature([Stat], { connectionName: 'stats', dataSource: 'statsDb' })`.
 
 ## Programmatic control
@@ -185,12 +185,12 @@ const moduleRef = await Test.createTestingModule({
 | DataSource | `addTransactionalDataSource(ds)` | automatic (uses `@nestjs/typeorm` tokens) |
 | Repositories | `TypeOrmModule.forFeature([E])` | `TransactionalModule.forFeature([E])` |
 | Decorator | `@Transactional()` | `@Transactional()` (unchanged) |
-| Propagation | `{ propagation: Propagation.REQUIRES_NEW }` | `@Transactional(Propagation.REQUIRES_NEW)` |
-| Isolation | `{ isolationLevel: IsolationLevel.SERIALIZABLE }` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` |
+| Propagation | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` (same syntax) |
+| Isolation | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` (same syntax) |
 | Hooks | `runOnTransactionCommit/Rollback` | use database/app events or `withTransaction` wrappers |
 | Mechanism | monkey-patches `DataSource`/`Repository` prototypes | plain DI + CLS — nothing is patched |
 
-Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, update `Propagation`/isolation imports. Services keep `@InjectRepository` + `@Transactional()` unchanged.
+Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, and update `Propagation`/`IsolationLevel` imports. Services keep `@InjectRepository` + `@Transactional({ ... })` unchanged — the decorator's options-object syntax is the same as `typeorm-transactional`'s.
 
 ## Caveats
 
