@@ -1,5 +1,16 @@
 # @nestjs-transactions/core
 
+## 0.4.0
+
+### Minor Changes
+
+- [#7](https://github.com/jubaerhosain/nestjs-transactions/pull/7) [`9d6694d`](https://github.com/jubaerhosain/nestjs-transactions/commit/9d6694dcbb2d6c66b4889e2c23f6760f78da5073) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - Add transaction lifecycle hooks (`runOnTransactionCommit`,
+  `runOnTransactionRollback`, `runOnTransactionComplete`) — a port of the
+  `typeorm-transactional` API. Call them inside a `@Transactional()` method to
+  register callbacks that run after the transaction commits, rolls back, or
+  completes. Built on CLS with no monkey-patching; async callbacks are awaited
+  sequentially and a throwing callback is caught and logged.
+
 ## 0.3.0
 
 ### Minor Changes
