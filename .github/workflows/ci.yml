@@ -6,6 +6,31 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint # eslint . — covers src + test/**/*.spec.ts
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build # typeorm resolves @nestjs-transactions/core via its built dist/*.d.ts
+      - run: pnpm typecheck # tsc --noEmit over src + tests (isolatedModules test runs don't type-check)
+
   build-test:
     runs-on: ubuntu-latest
     strategy:
@@ -22,7 +47,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
-      - run: pnpm lint
       - run: pnpm -r test:unit
 
   integration:

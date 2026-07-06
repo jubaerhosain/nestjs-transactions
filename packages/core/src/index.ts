@@ -4,7 +4,6 @@ export {
   ClsPluginTransactional,
   InjectTransaction,
   InjectTransactionHost,
-  Propagation,
   Transactional,
   TransactionAlreadyActiveError,
   TransactionHost,
@@ -14,6 +13,9 @@ export {
   getTransactionToken,
 } from '@nestjs-cls/transactional';
 export type { Transaction, TransactionalAdapter } from '@nestjs-cls/transactional';
+
+// SCREAMING_CASE propagation surface (members are the underlying library values)
+export { Propagation } from './propagation';
 
 // Adapter-author SPI
 export { createTransactionalModule } from './create-transactional-module';

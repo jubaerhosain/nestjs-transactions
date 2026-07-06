@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import {
   InjectTransactionHost,
-  Propagation,
   Transactional,
   TransactionalAdapter,
   TransactionHost,
 } from '@nestjs-cls/transactional';
+import { Propagation } from '../src';
 import { createTransactionalModule } from '../src/create-transactional-module';
 import { TransactionalRootOptionsBase } from '../src/interfaces';
 
@@ -50,7 +50,7 @@ class DefaultService {
     return [this.txHost.tx, await this.inTx()];
   }
 
-  @Transactional(Propagation.RequiresNew)
+  @Transactional(Propagation.REQUIRES_NEW)
   async requiresNew(): Promise<FakeTx> {
     return this.txHost.tx;
   }

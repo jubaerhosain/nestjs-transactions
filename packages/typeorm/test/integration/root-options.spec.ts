@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Transactional, TransactionalModule } from '../../src';
+import { IsolationLevel, Transactional, TransactionalModule } from '../../src';
 import { Member, PG_A } from './fixtures';
 
 @Injectable()
@@ -38,7 +38,9 @@ describe('forRoot options (real Postgres)', () => {
 
   it('applies defaultTxOptions from forRoot to every transaction', async () => {
     moduleRef = await bootWith(
-      TransactionalModule.forRoot({ defaultTxOptions: { isolationLevel: 'SERIALIZABLE' } }),
+      TransactionalModule.forRoot({
+        defaultTxOptions: { isolationLevel: IsolationLevel.SERIALIZABLE },
+      }),
     );
     const probe = moduleRef.get(IsolationProbe);
     await expect(probe.currentIsolationLevel()).resolves.toBe('serializable');
@@ -47,7 +49,9 @@ describe('forRoot options (real Postgres)', () => {
   it('applies defaultTxOptions resolved asynchronously via forRootAsync', async () => {
     moduleRef = await bootWith(
       TransactionalModule.forRootAsync({
-        useFactory: async () => ({ defaultTxOptions: { isolationLevel: 'REPEATABLE READ' } }),
+        useFactory: async () => ({
+          defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
+        }),
       }),
     );
     const probe = moduleRef.get(IsolationProbe);
@@ -57,7 +61,7 @@ describe('forRoot options (real Postgres)', () => {
   // Regression for the review finding: the shared adapter used to keep app A's
   // defaultTxOptions when app B's factory resolved none.
   it('does not leak async defaultTxOptions across app compiles of one module', async () => {
-    let txOptions: object | undefined = { isolationLevel: 'SERIALIZABLE' };
+    let txOptions: object | undefined = { isolationLevel: IsolationLevel.SERIALIZABLE };
     const sharedModule = TransactionalModule.forRootAsync({
       useFactory: async () => ({ defaultTxOptions: txOptions as any }),
     });
