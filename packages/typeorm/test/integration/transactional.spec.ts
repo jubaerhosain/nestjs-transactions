@@ -51,28 +51,28 @@ class MemberService {
     throw new Error('boom');
   }
 
-  @Transactional(Propagation.RequiresNew)
+  @Transactional(Propagation.REQUIRES_NEW)
   async createIndependently(name: string): Promise<void> {
     await this.repo.save({ name });
   }
 
-  @Transactional(Propagation.Mandatory)
+  @Transactional(Propagation.MANDATORY)
   async requiresExistingTx(name: string): Promise<void> {
     await this.repo.save({ name });
   }
 
-  @Transactional(Propagation.Never)
+  @Transactional(Propagation.NEVER)
   async mustRunWithoutTx(name: string): Promise<void> {
     await this.repo.save({ name });
   }
 
-  @Transactional(Propagation.Nested)
+  @Transactional(Propagation.NESTED)
   async createNested(name: string): Promise<void> {
     await this.repo.save({ name });
     throw new Error('nested boom');
   }
 
-  @Transactional<TransactionalAdapterTypeOrm>({ isolationLevel: IsolationLevel.SERIALIZABLE })
+  @Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })
   async currentIsolationLevel(): Promise<string> {
     const [{ transaction_isolation }] = await this.repo.query(
       'SELECT current_setting(\'transaction_isolation\') AS transaction_isolation',
@@ -170,7 +170,7 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
       await expect(
         service.txHost.withTransaction(async () => {
           await service.repo.save({ name: 'outer' });
-          await service.txHost.withTransaction(Propagation.NotSupported, async () => {
+          await service.txHost.withTransaction(Propagation.NOT_SUPPORTED, async () => {
             await service.repo.save({ name: 'suspended' });
           });
           throw new Error('outer boom');
@@ -182,11 +182,11 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
     });
 
     it('Supports joins a transaction when present and runs plainly when not', async () => {
-      await service.txHost.withTransaction(Propagation.Supports, async () => {
+      await service.txHost.withTransaction(Propagation.SUPPORTS, async () => {
         expect(service.txHost.isTransactionActive()).toBe(false);
       });
       await service.txHost.withTransaction(async () => {
-        await service.txHost.withTransaction(Propagation.Supports, async () => {
+        await service.txHost.withTransaction(Propagation.SUPPORTS, async () => {
           expect(service.txHost.isTransactionActive()).toBe(true);
         });
       });

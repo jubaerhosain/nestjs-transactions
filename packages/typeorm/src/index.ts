@@ -4,7 +4,6 @@ export {
   InjectTransaction,
   InjectTransactionHost,
   Propagation,
-  Transactional,
   TransactionAlreadyActiveError,
   TransactionHost,
   TransactionNotActiveError,
@@ -13,6 +12,9 @@ export {
   getTransactionToken,
 } from '@nestjs-transactions/core';
 export type { Transaction } from '@nestjs-transactions/core';
+
+// `Transactional` typed for TypeORM — no `<TransactionalAdapterTypeOrm>` needed
+export { Transactional } from './transactional';
 
 // The module: forRoot / forRootAsync / forFeature
 export { TransactionalModule } from './transactional.module';
