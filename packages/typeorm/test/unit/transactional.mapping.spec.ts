@@ -31,6 +31,14 @@ describe('@Transactional facade — option → positional mapping', () => {
     expect(delegate).toHaveBeenCalledWith('stats', undefined, {});
   });
 
+  it("{ connectionName: 'default' } → normalizes to the default host (undefined)", () => {
+    // 'default' names the default connection, whose host is registered under
+    // `undefined`. Passing it through raw would target a never-registered
+    // TransactionHost_default — matching resolveConnection's normalization.
+    Transactional({ connectionName: 'default' });
+    expect(delegate).toHaveBeenCalledWith(undefined, undefined, {});
+  });
+
   it('{ isolationLevel } → forwards adapter options as the third argument', () => {
     Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE });
     expect(delegate).toHaveBeenCalledWith(undefined, undefined, {

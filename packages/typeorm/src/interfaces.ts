@@ -77,7 +77,7 @@ export function resolveConnection(connection?: ForFeatureConnection): {
 const DEFAULT_DATA_SOURCE_NAME = 'default';
 
 /** Map the literal 'default' name to `undefined` (the default connection). */
-function normalizeName(name: string | undefined): string | undefined {
+export function normalizeName(name: string | undefined): string | undefined {
   return name === DEFAULT_DATA_SOURCE_NAME ? undefined : name;
 }
 

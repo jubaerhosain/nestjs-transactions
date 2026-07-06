@@ -42,6 +42,28 @@ describe('@Transactional (object-form facade)', () => {
     await moduleRef.close();
   });
 
+  it("maps { connectionName: 'default' } to the default host", async () => {
+    // Only the DEFAULT connection is registered (no named 'default' host). If the
+    // facade forwarded 'default' raw, it would resolve TransactionHost_default —
+    // which was never registered — and throw. Running to completion proves
+    // 'default' is normalized to the default connection, matching resolveConnection.
+    @Injectable()
+    class Svc {
+      @Transactional({ connectionName: 'default' })
+      async run(): Promise<string> {
+        return 'ok';
+      }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [createNoOpTransactionalModule()],
+      providers: [Svc],
+    }).compile();
+
+    await expect(moduleRef.get(Svc).run()).resolves.toBe('ok');
+    await moduleRef.close();
+  });
+
   it('maps { connectionName } even when the name collides with a propagation literal', async () => {
     // Only the connection literally named "REQUIRED" is registered — the default
     // connection is NOT. If the facade misread "REQUIRED" as a propagation mode

@@ -22,4 +22,4 @@ Behavior is identical — the decorator still delegates to `@nestjs-cls/transact
 
 The `@nestjs-transactions/core` `Transactional` export is unchanged (still the positional `@nestjs-cls` decorator) for adapter authors.
 
-Also fixes connection resolution so an explicit `connectionName: 'default'` (and the string `'default'` form) now maps to the default connection — matching how `dataSource: 'default'` already behaves — instead of wiring repositories to a never-registered `'default'`-named `TransactionHost`.
+Also fixes connection resolution so an explicit `connectionName: 'default'` (and the string `'default'` form) now maps to the default connection — matching how `dataSource: 'default'` already behaves — instead of wiring repositories to a never-registered `'default'`-named `TransactionHost`. The `@Transactional` decorator applies the same normalization, so `@Transactional({ connectionName: 'default' })` targets the default connection instead of throwing "TransactionHost not initialized".

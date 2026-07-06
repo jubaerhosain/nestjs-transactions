@@ -1,6 +1,7 @@
 import { Transactional as clsTransactional } from '@nestjs-transactions/core';
 import type { Propagation } from '@nestjs-transactions/core';
 import type { TypeOrmTransactionOptions } from '@nestjs-cls/transactional-adapter-typeorm';
+import { normalizeName } from './interfaces';
 
 /**
  * Options for {@link Transactional}. A single object — matching the ergonomics
@@ -47,5 +48,10 @@ const delegate = clsTransactional as (
  */
 export function Transactional(options: TransactionalOptions = {}): MethodDecorator {
   const { connectionName, propagation, ...adapterOptions } = options;
-  return delegate(connectionName, propagation, adapterOptions as TypeOrmTransactionOptions);
+  // The literal 'default' names the default connection — whose TransactionHost is
+  // registered under `undefined`, not a `TransactionHost_default` symbol. Reuse
+  // resolveConnection's normalization so `@Transactional({ connectionName:
+  // 'default' })` targets the default host instead of throwing
+  // "TransactionHost not initialized".
+  return delegate(normalizeName(connectionName), propagation, adapterOptions as TypeOrmTransactionOptions);
 }
