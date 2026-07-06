@@ -4,6 +4,8 @@ import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   InjectTransactionHost,
+  IsolationLevel,
+  Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
   TransactionalModule,
@@ -21,18 +23,47 @@ class ReportingService {
     readonly statsTxHost: TransactionHost<TransactionalAdapterTypeOrm>,
   ) {}
 
-  @Transactional('stats')
+  @Transactional({ connectionName: 'stats' })
   async recordAndFail(label: string): Promise<void> {
     await this.stats.save({ label });
     throw new Error('stats boom');
   }
 
-  @Transactional('stats')
+  @Transactional({ connectionName: 'stats' })
   async recordStatAndWriteMember(label: string, name: string): Promise<void> {
     await this.stats.save({ label });
     // Member write happens on the DEFAULT connection — outside the stats transaction.
     await this.members.save({ name });
     throw new Error('stats boom');
+  }
+
+  // Exercises all three object keys at once on the NAMED connection.
+  @Transactional({
+    connectionName: 'stats',
+    propagation: Propagation.REQUIRES_NEW,
+    isolationLevel: IsolationLevel.SERIALIZABLE,
+  })
+  async recordAtSerializable(label: string): Promise<string> {
+    await this.stats.save({ label });
+    const [{ transaction_isolation }] = await this.stats.query(
+      "SELECT current_setting('transaction_isolation') AS transaction_isolation",
+    );
+    return transaction_isolation;
+  }
+
+  @Transactional({ connectionName: 'stats' })
+  async recordStat(label: string): Promise<void> {
+    await this.stats.save({ label });
+  }
+
+  // Outer tx on the DEFAULT connection nests an inner tx on the 'stats'
+  // connection — two independent TransactionHosts, so the inner commits on its
+  // own connection even though the outer connection rolls back.
+  @Transactional()
+  async writeMemberThenRecordStat(name: string, label: string): Promise<void> {
+    await this.members.save({ name });
+    await this.recordStat(label);
+    throw new Error('default boom');
   }
 }
 
@@ -79,6 +110,19 @@ describe('multiple data sources (real Postgres, two databases)', () => {
     await expect(service.members.count()).resolves.toBe(1);
   });
 
+  it('forwards connectionName + propagation + isolationLevel together to the named connection', async () => {
+    await expect(service.recordAtSerializable('s1')).resolves.toBe('serializable');
+    await expect(service.stats.count()).resolves.toBe(1);
+    // Ran on the stats connection only — the default connection is untouched.
+    await expect(service.members.count()).resolves.toBe(0);
+  });
+
+  it('nesting a stats-connection tx inside a default-connection tx keeps them independent', async () => {
+    await expect(service.writeMemberThenRecordStat('m1', 's1')).rejects.toThrow('default boom');
+    await expect(service.members.count()).resolves.toBe(0); // default connection rolled back
+    await expect(service.stats.count()).resolves.toBe(1); // stats connection committed independently
+  });
+
   it('repositories resolve against their own data source', async () => {
     await service.members.save({ name: 'm' });
     await service.stats.save({ label: 's' });
@@ -94,7 +138,7 @@ describe('forFeature/forRoot with dataSource-only options (real Postgres)', () =
   class StatsService {
     constructor(@InjectRepository(Stat, 'stats') readonly stats: Repository<Stat>) {}
 
-    @Transactional('stats')
+    @Transactional({ connectionName: 'stats' })
     async recordAndFail(label: string): Promise<void> {
       await this.stats.save({ label });
       throw new Error('stats boom');
@@ -120,7 +164,7 @@ describe('forFeature/forRoot with dataSource-only options (real Postgres)', () =
 
   afterAll(() => moduleRef.close());
 
-  it("registers the 'stats' connection so @Transactional('stats') wraps the stats DB", async () => {
+  it("registers the 'stats' connection so @Transactional({ connectionName: 'stats' }) wraps the stats DB", async () => {
     await expect(service.recordAndFail('s1')).rejects.toThrow('stats boom');
     await expect(service.stats.count()).resolves.toBe(0); // rolled back on the stats DB
   });

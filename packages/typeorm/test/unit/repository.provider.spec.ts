@@ -1,7 +1,7 @@
 import { FactoryProvider } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { getTransactionHostToken, TransactionHost } from '@nestjs-transactions/core';
-import { Repository } from 'typeorm';
+import { EntitySchema, Repository } from 'typeorm';
 import { provideTransactionAwareRepository } from '../../src/repository.provider';
 
 class Member {}
@@ -65,6 +65,48 @@ describe('provideTransactionAwareRepository', () => {
     const proxy = provider.useFactory(fakeTxHost(manager));
 
     expect(proxy instanceof Repository).toBe(true);
+  });
+
+  it('throws a descriptive error naming the entity when getRepository returns undefined', () => {
+    const manager = { getRepository: jest.fn(() => undefined) };
+
+    const provider = provideTransactionAwareRepository(Member) as FactoryProvider;
+    const proxy = provider.useFactory(fakeTxHost(manager));
+
+    expect(() => proxy.save({})).toThrow(/getRepository\(\) returned undefined for entity Member/);
+  });
+
+  it('resolves the token and error name from an EntitySchema entity', () => {
+    const schema = new EntitySchema<{ id: number }>({
+      name: 'MemberSchema',
+      columns: { id: { type: Number, primary: true } },
+    });
+
+    const provider = provideTransactionAwareRepository(schema) as FactoryProvider;
+    expect(provider.provide).toBe(getRepositoryToken(schema));
+
+    const manager = { getRepository: jest.fn(() => undefined) };
+    const proxy = provider.useFactory(fakeTxHost(manager));
+    expect(() => proxy.save({})).toThrow(/for entity MemberSchema/);
+  });
+
+  it('uses getRepository when the entity has metadata but is not a tree', () => {
+    const plainRepo = { kind: 'plain' };
+    const manager = {
+      getRepository: jest.fn(() => plainRepo),
+      getTreeRepository: jest.fn(),
+      connection: {
+        hasMetadata: () => true,
+        getMetadata: () => ({ treeType: undefined }),
+      },
+    };
+
+    const provider = provideTransactionAwareRepository(Member) as FactoryProvider;
+    const proxy = provider.useFactory(fakeTxHost(manager));
+
+    expect(proxy.kind).toBe('plain');
+    expect(manager.getRepository).toHaveBeenCalledWith(Member);
+    expect(manager.getTreeRepository).not.toHaveBeenCalled();
   });
 
   it('uses getTreeRepository for tree entities', () => {

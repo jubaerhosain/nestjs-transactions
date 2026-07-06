@@ -66,7 +66,7 @@ If `register` throws, everything rolls back — including writes made in `Accoun
 ```ts
 import { Propagation, Transactional } from '@nestjs-transactions/typeorm';
 
-@Transactional(Propagation.REQUIRES_NEW)
+@Transactional({ propagation: Propagation.REQUIRES_NEW })
 async audit(entry: AuditEntry) { /* commits even if the caller rolls back */ }
 ```
 
@@ -118,13 +118,13 @@ TransactionalModule.forFeature([Stat], 'stats'),
 ```
 
 ```ts
-@Transactional('stats')                 // connection name goes FIRST
+@Transactional({ connectionName: 'stats' })
 async recordStats() { /* wraps only the stats DataSource */ }
 ```
 
-The object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are equivalent to the
-string form — each side defaults to the other. If the connection name must differ from the data
-source name, pass both explicitly:
+For `forFeature`, the object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are
+equivalent to the string form — each side defaults to the other. If the connection name must differ
+from the data source name, pass both explicitly:
 `TransactionalModule.forFeature([Stat], { connectionName: 'stats', dataSource: 'statsDb' })`.
 
 ## Programmatic control
@@ -146,14 +146,34 @@ For a named connection inject with `@InjectTransactionHost('stats')`.
 `repo.extend()` and hand-rolled repository classes hold a fixed `EntityManager` and can't be silently intercepted. Extend the base class instead:
 
 ```ts
-import { TransactionAwareRepository } from '@nestjs-transactions/typeorm';
+import { TransactionalRepository, TransactionHost, TypeOrmAdapter } from '@nestjs-transactions/typeorm';
 
 @Injectable()
-export class MemberRepository extends TransactionAwareRepository<Member> {
-  protected readonly entity = Member;
+export class MemberRepository extends TransactionalRepository<Member> {
+  constructor(txHost: TransactionHost<TypeOrmAdapter>) {
+    super(Member, txHost);
+  }
 
   findByEmail(email: string) {
     return this.repo.findOneBy({ email }); // this.repo tracks the current transaction
+  }
+}
+```
+
+Share behaviour across repositories with your own generic base — a plain abstract subclass, no factories, that can also pull in extra request context and pass it up via `super(...)`:
+
+```ts
+export abstract class BaseRepository<E extends ObjectLiteral> extends TransactionalRepository<E> {
+  constructor(
+    entity: EntityTarget<E>,
+    txHost: TransactionHost<TypeOrmAdapter>,
+    protected readonly cls: ClsService,
+  ) {
+    super(entity, txHost);
+  }
+
+  findAll(): Promise<E[]> {
+    return this.repo.find();
   }
 }
 ```
@@ -185,18 +205,18 @@ const moduleRef = await Test.createTestingModule({
 | DataSource | `addTransactionalDataSource(ds)` | automatic (uses `@nestjs/typeorm` tokens) |
 | Repositories | `TypeOrmModule.forFeature([E])` | `TransactionalModule.forFeature([E])` |
 | Decorator | `@Transactional()` | `@Transactional()` (unchanged) |
-| Propagation | `{ propagation: Propagation.REQUIRES_NEW }` | `@Transactional(Propagation.REQUIRES_NEW)` |
-| Isolation | `{ isolationLevel: IsolationLevel.SERIALIZABLE }` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` |
+| Propagation | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` (same syntax) |
+| Isolation | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` (same syntax) |
 | Hooks | `runOnTransactionCommit/Rollback` | use database/app events or `withTransaction` wrappers |
 | Mechanism | monkey-patches `DataSource`/`Repository` prototypes | plain DI + CLS — nothing is patched |
 
-Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, update `Propagation`/isolation imports. Services keep `@InjectRepository` + `@Transactional()` unchanged.
+Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, and update `Propagation`/`IsolationLevel` imports. Services keep `@InjectRepository` + `@Transactional({ ... })` unchanged — the decorator's options-object syntax is the same as `typeorm-transactional`'s.
 
 ## Caveats
 
 - **Don't register the same entity with both** `TypeOrmModule.forFeature` and `TransactionalModule.forFeature` in the same module — they claim the same token; the last registration wins.
 - **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `RequiresNew` for genuine parallelism.
-- **`repo.extend()`** can't be intercepted — use `TransactionAwareRepository` (above).
+- **`repo.extend()`** can't be intercepted — use `TransactionalRepository` (above).
 - If your app already uses `nestjs-cls` (`ClsModule.forRoot`), everything just works: this package only registers a CLS *plugin* and never calls `ClsModule.forRoot()` itself.
 
 ## License

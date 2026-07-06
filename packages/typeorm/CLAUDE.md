@@ -12,16 +12,33 @@ monkey-patching; built on `@nestjs-transactions/core` +
 
 ## Public surface (`src/index.ts`)
 
+- `Transactional` + `TransactionalOptions` — `src/transactional.ts`. An
+  **object-only** decorator: `@Transactional({ connectionName?, propagation?,
+isolationLevel? })`, matching `typeorm-transactional`'s ergonomics. It is a
+  **facade** that delegates to `@nestjs-cls`'s decorator — same engine, no
+  monkey-patching. Note: it always passes the options object as the third
+  positional arg to the underlying decorator, forcing the unambiguous branch so
+  a connection named like a propagation literal (e.g. `"REQUIRED"`) can't be
+  misread. This deliberately breaks the "single symbol identity" rule for
+  `Transactional` only — ours is a distinct function wrapping `@nestjs-cls`'s.
+  (core's `Transactional` stays the positional `@nestjs-cls` passthrough.)
 - `TransactionalModule` — `src/transactional.module.ts`
   (`forRoot` / `forRootAsync` / `forFeature`). `forFeature([Entity])` replaces
   `TypeOrmModule.forFeature([Entity])`.
 - `provideTransactionAwareRepository` — `src/repository.provider.ts`.
-- `TransactionAwareRepository` — `src/transaction-aware.repository.ts`.
+- `TransactionalRepository` — `src/transactional.repository.ts`. Base class for
+  custom repositories; the entity and `TransactionHost` are passed via the
+  constructor (`super(Entity, txHost)`), so subclasses (and user-defined generic
+  base repositories) stay plain classes. Use `this.repo` / `this.manager`.
 - `IsolationLevel` enum — `src/isolation-level.ts`. Kept in sync with TypeORM's
   own `IsolationLevel` literal type via a **compile-time assertion** in that file
   (`_AssertInSync`); if TypeORM changes its literals, `pnpm typecheck` fails here.
 - Re-exported core symbols (`Transactional`, `TransactionHost`, `Propagation`,
   error classes, token helpers) — same identity as core.
+- `TransactionalAdapterTypeOrm` + `TypeOrmAdapter` — the underlying `@nestjs-cls`
+  adapter, re-exported. `TypeOrmAdapter` is a concise alias (same symbol) for use
+  in type positions like `TransactionHost<TypeOrmAdapter>`; the longer name stays
+  exported. (Not to be confused with core's generic `TransactionalAdapter` SPI.)
 - `TypeOrmTransactionHost` — a **type-only** alias. Use it in type positions
   only; do NOT use it as a constructor-injection annotation (it erases to
   `Object`). Inject the real class or `@InjectTransactionHost('name')` instead.

@@ -6,13 +6,17 @@ import { Repository } from 'typeorm';
 import {
   Transactional,
   TransactionalModule,
+  TransactionHost,
+  TypeOrmAdapter,
 } from '../../src';
-import { TransactionAwareRepository } from '../../src/transaction-aware.repository';
+import { TransactionalRepository } from '../../src/transactional.repository';
 import { Member, PG_A } from './fixtures';
 
 @Injectable()
-class MemberRepository extends TransactionAwareRepository<Member> {
-  protected readonly entity = Member;
+class MemberRepository extends TransactionalRepository<Member> {
+  constructor(txHost: TransactionHost<TypeOrmAdapter>) {
+    super(Member, txHost);
+  }
 
   findByName(name: string): Promise<Member | null> {
     return this.repo.findOneBy({ name });
@@ -78,7 +82,7 @@ describe('coexistence with a host app that owns ClsModule.forRoot (real Postgres
     await expect(service.repo.count()).resolves.toBe(1);
   });
 
-  it('custom repositories via TransactionAwareRepository join the transaction', async () => {
+  it('custom repositories via TransactionalRepository join the transaction', async () => {
     await expect(service.createViaCustomRepoAndFail('m1')).rejects.toThrow('custom repo boom');
     await expect(service.repo.count()).resolves.toBe(0);
 

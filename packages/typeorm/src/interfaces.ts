@@ -58,17 +58,29 @@ export function resolveConnection(connection?: ForFeatureConnection): {
   dataSource: DataSourceRef | undefined;
 } {
   if (typeof connection === 'string') {
-    return { connectionName: connection, dataSource: connection };
+    return { connectionName: normalizeName(connection), dataSource: connection };
   }
   return {
-    connectionName: connection?.connectionName ?? dataSourceName(connection?.dataSource),
+    // The literal 'default' names the default connection — which the underlying
+    // TransactionHost token represents as `undefined`, not a named symbol. Run
+    // an explicit connectionName through the same normalization as a dataSource
+    // name so `{ connectionName: 'default' }` doesn't wire repositories to a
+    // never-registered `TransactionHost_default`.
+    connectionName:
+      connection?.connectionName !== undefined
+        ? normalizeName(connection.connectionName)
+        : dataSourceName(connection?.dataSource),
     dataSource: connection?.dataSource ?? connection?.connectionName,
   };
 }
 
 const DEFAULT_DATA_SOURCE_NAME = 'default';
 
-function dataSourceName(dataSource: DataSourceRef | undefined): string | undefined {
-  const name = typeof dataSource === 'string' ? dataSource : dataSource?.name;
+/** Map the literal 'default' name to `undefined` (the default connection). */
+export function normalizeName(name: string | undefined): string | undefined {
   return name === DEFAULT_DATA_SOURCE_NAME ? undefined : name;
+}
+
+function dataSourceName(dataSource: DataSourceRef | undefined): string | undefined {
+  return normalizeName(typeof dataSource === 'string' ? dataSource : dataSource?.name);
 }
