@@ -1,5 +1,69 @@
 # @nestjs-transactions/typeorm
 
+## 3.0.0
+
+### Major Changes
+
+- [#5](https://github.com/jubaerhosain/nestjs-transactions/pull/5) [`0047114`](https://github.com/jubaerhosain/nestjs-transactions/commit/0047114627caaff3816856366362231efe990be3) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - **Breaking:** `@Transactional` now takes a single options object instead of positional arguments, matching `typeorm-transactional`'s ergonomics.
+
+  ```ts
+  // before (positional)
+  @Transactional(Propagation.REQUIRES_NEW)
+  @Transactional('stats')
+  @Transactional('stats', Propagation.NESTED, { isolationLevel: IsolationLevel.SERIALIZABLE })
+
+  // after (object)
+  @Transactional({ propagation: Propagation.REQUIRES_NEW })
+  @Transactional({ connectionName: 'stats' })
+  @Transactional({ connectionName: 'stats', propagation: Propagation.NESTED, isolationLevel: IsolationLevel.SERIALIZABLE })
+  ```
+
+  `@Transactional()` (no arguments) is unchanged, and calls that already passed an options object (e.g. `@Transactional({ isolationLevel })`) keep working.
+
+  Behavior is identical — the decorator still delegates to `@nestjs-cls/transactional` (no monkey-patching). The object form is also more robust: `connectionName` and `propagation` are separate keys, so a connection named like a propagation literal (e.g. `"REQUIRED"`) can no longer be misinterpreted.
+
+  The `@nestjs-transactions/core` `Transactional` export is unchanged (still the positional `@nestjs-cls` decorator) for adapter authors.
+
+  Also fixes connection resolution so an explicit `connectionName: 'default'` (and the string `'default'` form) now maps to the default connection — matching how `dataSource: 'default'` already behaves — instead of wiring repositories to a never-registered `'default'`-named `TransactionHost`. The `@Transactional` decorator applies the same normalization, so `@Transactional({ connectionName: 'default' })` targets the default connection instead of throwing "TransactionHost not initialized".
+
+- [#5](https://github.com/jubaerhosain/nestjs-transactions/pull/5) [`0047114`](https://github.com/jubaerhosain/nestjs-transactions/commit/0047114627caaff3816856366362231efe990be3) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - **Breaking:** the custom-repository base class `TransactionAwareRepository` is renamed to `TransactionalRepository`, and it now receives the entity and `TransactionHost` through the constructor instead of an abstract `entity` field.
+
+  ```ts
+  // before
+  import { TransactionAwareRepository } from '@nestjs-transactions/typeorm';
+
+  @Injectable()
+  export class MemberRepository extends TransactionAwareRepository<Member> {
+    protected readonly entity = Member;
+
+    findByEmail(email: string) {
+      return this.repo.findOneBy({ email });
+    }
+  }
+
+  // after
+  import {
+    TransactionalRepository,
+    TransactionHost,
+    TypeOrmAdapter,
+  } from '@nestjs-transactions/typeorm';
+
+  @Injectable()
+  export class MemberRepository extends TransactionalRepository<Member> {
+    constructor(txHost: TransactionHost<TypeOrmAdapter>) {
+      super(Member, txHost);
+    }
+
+    findByEmail(email: string) {
+      return this.repo.findOneBy({ email });
+    }
+  }
+  ```
+
+  `this.repo` / `this.manager` behave exactly as before — they always reflect the current transactional `EntityManager`. The constructor form makes user-defined base repositories plain generic subclasses (no mixin factories) that can also inject extra request context (e.g. `ClsService`) and pass it up via `super(...)`.
+
+  **New (non-breaking):** `TypeOrmAdapter` — a concise re-export alias for `TransactionalAdapterTypeOrm`, for use in type positions like `TransactionHost<TypeOrmAdapter>`. The original `TransactionalAdapterTypeOrm` export is unchanged.
+
 ## 2.0.0
 
 ### Minor Changes
