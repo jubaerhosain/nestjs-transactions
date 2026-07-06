@@ -48,7 +48,12 @@ export type ForFeatureConnection =
       dataSource?: DataSourceRef;
     };
 
-export function normalizeForFeatureConnection(connection?: ForFeatureConnection): {
+/**
+ * The single place the "connectionName and dataSource default to each other"
+ * convention lives. Used by forRoot, forRootAsync, forFeature and the testing
+ * module so all of them always resolve the same DataSource/TransactionHost pair.
+ */
+export function resolveConnection(connection?: ForFeatureConnection): {
   connectionName: string | undefined;
   dataSource: DataSourceRef | undefined;
 } {
@@ -56,7 +61,14 @@ export function normalizeForFeatureConnection(connection?: ForFeatureConnection)
     return { connectionName: connection, dataSource: connection };
   }
   return {
-    connectionName: connection?.connectionName,
+    connectionName: connection?.connectionName ?? dataSourceName(connection?.dataSource),
     dataSource: connection?.dataSource ?? connection?.connectionName,
   };
+}
+
+const DEFAULT_DATA_SOURCE_NAME = 'default';
+
+function dataSourceName(dataSource: DataSourceRef | undefined): string | undefined {
+  const name = typeof dataSource === 'string' ? dataSource : dataSource?.name;
+  return name === DEFAULT_DATA_SOURCE_NAME ? undefined : name;
 }

@@ -1,7 +1,6 @@
 import { DynamicModule, Type } from '@nestjs/common';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { ClsModule } from 'nestjs-cls';
-import { ConnectionRegistry } from './connection-registry';
 import {
   AdapterRegistration,
   TransactionalAsyncOptionsBase,
@@ -55,7 +54,6 @@ function buildDynamicModule(
   registration: AdapterRegistration,
   extraImports: DynamicModule['imports'] = [],
 ): DynamicModule {
-  ConnectionRegistry.register(options.connectionName, moduleClass.name);
   const plugin = new ClsPluginTransactional({
     connectionName: options.connectionName,
     enableTransactionProxy: options.enableTransactionProxy,

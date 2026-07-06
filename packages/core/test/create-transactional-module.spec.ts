@@ -7,7 +7,6 @@ import {
   TransactionalAdapter,
   TransactionHost,
 } from '@nestjs-cls/transactional';
-import { ConnectionRegistry } from '../src/connection-registry';
 import { createTransactionalModule } from '../src/create-transactional-module';
 import { TransactionalRootOptionsBase } from '../src/interfaces';
 
@@ -68,8 +67,6 @@ class NamedService {
 }
 
 describe('createTransactionalModule', () => {
-  beforeEach(() => ConnectionRegistry.reset());
-
   it('wires @Transactional and TransactionHost for the default connection', async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [TransactionalModule.forRoot()],
@@ -126,17 +123,6 @@ describe('createTransactionalModule', () => {
 
     expect((await named.inTx()).id).toBeGreaterThan(0);
     expect(named.txHost.tx.id).toBe(0);
-
-    await moduleRef.close();
-  });
-
-  it('registers connections in the ConnectionRegistry', async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [TransactionalModule.forRoot({ connectionName: 'registered' })],
-    }).compile();
-
-    expect(ConnectionRegistry.has('registered')).toBe(true);
-    expect(ConnectionRegistry.has('missing')).toBe(false);
 
     await moduleRef.close();
   });

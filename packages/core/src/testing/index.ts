@@ -25,7 +25,9 @@ export function createNoOpTransactionalModule(
   return ClsModule.registerPlugins([
     new ClsPluginTransactional({
       connectionName: options.connectionName,
-      adapter: new NoOpTransactionalAdapter({ tx: options.tx, disableWarning: true }),
+      // Default to an empty object: upstream throws when tx is missing, and a
+      // test that only needs @Transactional() to no-op has no tx to provide.
+      adapter: new NoOpTransactionalAdapter({ tx: options.tx ?? {}, disableWarning: true }),
     }),
   ]);
 }

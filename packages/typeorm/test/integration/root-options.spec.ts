@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConnectionRegistry, Transactional, TransactionalModule } from '../../src';
+import { Transactional, TransactionalModule } from '../../src';
 import { Member, PG_A } from './fixtures';
 
 @Injectable()
@@ -19,7 +19,6 @@ class IsolationProbe {
 }
 
 async function bootWith(transactionalRoot: ReturnType<typeof TransactionalModule.forRoot>) {
-  ConnectionRegistry.reset();
   const moduleRef = await Test.createTestingModule({
     imports: [
       TypeOrmModule.forRoot(PG_A),
@@ -53,5 +52,26 @@ describe('forRoot options (real Postgres)', () => {
     );
     const probe = moduleRef.get(IsolationProbe);
     await expect(probe.currentIsolationLevel()).resolves.toBe('repeatable read');
+  });
+
+  // Regression for the review finding: the shared adapter used to keep app A's
+  // defaultTxOptions when app B's factory resolved none.
+  it('does not leak async defaultTxOptions across app compiles of one module', async () => {
+    let txOptions: object | undefined = { isolationLevel: 'SERIALIZABLE' };
+    const sharedModule = TransactionalModule.forRootAsync({
+      useFactory: async () => ({ defaultTxOptions: txOptions as any }),
+    });
+
+    moduleRef = await bootWith(sharedModule);
+    await expect(moduleRef.get(IsolationProbe).currentIsolationLevel()).resolves.toBe(
+      'serializable',
+    );
+    await moduleRef.close();
+
+    txOptions = undefined; // second app resolves NO defaults
+    moduleRef = await bootWith(sharedModule);
+    await expect(moduleRef.get(IsolationProbe).currentIsolationLevel()).resolves.toBe(
+      'read committed', // Postgres default — NOT the stale serializable
+    );
   });
 });

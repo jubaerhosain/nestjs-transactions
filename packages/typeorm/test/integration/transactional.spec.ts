@@ -3,7 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  ConnectionRegistry,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
@@ -86,7 +85,6 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
   let service: MemberService;
 
   beforeAll(async () => {
-    ConnectionRegistry.reset();
     moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot(PG_A),
@@ -196,6 +194,22 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
 
   it('honors per-call isolation levels', async () => {
     await expect(service.currentIsolationLevel()).resolves.toBe('serializable');
+  });
+
+  // Regression for the review finding: spies used to land on the fallback
+  // repository only and were silently bypassed inside transactions.
+  it('jest.spyOn on the injected repository is honored inside @Transactional()', async () => {
+    const spy = jest.spyOn(service.repo, 'save').mockResolvedValue({ id: 0, name: 'mock' } as Member);
+
+    // Both services inject the same repository provider, so both saves inside
+    // the transaction hit the spy — nothing reaches the database.
+    await service.createAcrossServices('a', 'b');
+    expect(spy).toHaveBeenCalledTimes(2);
+    await expect(service.repo.count()).resolves.toBe(0);
+
+    spy.mockRestore();
+    await service.repo.save({ name: 'real-again' });
+    await expect(service.repo.count()).resolves.toBe(1);
   });
 
   it('does not bleed transactions across concurrent invocations', async () => {

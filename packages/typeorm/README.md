@@ -117,15 +117,17 @@ TransactionalModule.forFeature([Stat], 'stats'),
 async recordStats() { /* wraps only the stats DataSource */ }
 ```
 
-If the connection name must differ from the data source name, use the object form:
+The object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are equivalent to the
+string form — each side defaults to the other. If the connection name must differ from the data
+source name, pass both explicitly:
 `TransactionalModule.forFeature([Stat], { connectionName: 'stats', dataSource: 'statsDb' })`.
 
 ## Programmatic control
 
 ```ts
-import { TransactionHost, TypeOrmTransactionHost } from '@nestjs-transactions/typeorm';
+import { TransactionalAdapterTypeOrm, TransactionHost } from '@nestjs-transactions/typeorm';
 
-constructor(private readonly txHost: TypeOrmTransactionHost) {}
+constructor(private readonly txHost: TransactionHost<TransactionalAdapterTypeOrm>) {}
 
 await this.txHost.withTransaction(async () => { /* ... */ });
 this.txHost.isTransactionActive();

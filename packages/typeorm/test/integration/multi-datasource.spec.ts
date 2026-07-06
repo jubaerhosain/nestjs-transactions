@@ -3,7 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  ConnectionRegistry,
   InjectTransactionHost,
   Transactional,
   TransactionalAdapterTypeOrm,
@@ -42,7 +41,6 @@ describe('multiple data sources (real Postgres, two databases)', () => {
   let service: ReportingService;
 
   beforeAll(async () => {
-    ConnectionRegistry.reset();
     moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot(PG_A),
@@ -86,5 +84,44 @@ describe('multiple data sources (real Postgres, two databases)', () => {
     await service.stats.save({ label: 's' });
     await expect(service.members.count()).resolves.toBe(1);
     await expect(service.stats.count()).resolves.toBe(1);
+  });
+});
+
+// Regression for the review finding: { dataSource: 'stats' } used to bind the
+// stats repository to the DEFAULT connection's manager (silent wrong database).
+describe('forFeature/forRoot with dataSource-only options (real Postgres)', () => {
+  @Injectable()
+  class StatsService {
+    constructor(@InjectRepository(Stat, 'stats') readonly stats: Repository<Stat>) {}
+
+    @Transactional('stats')
+    async recordAndFail(label: string): Promise<void> {
+      await this.stats.save({ label });
+      throw new Error('stats boom');
+    }
+  }
+
+  let moduleRef: TestingModule;
+  let service: StatsService;
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
+        TransactionalModule.forRoot({ dataSource: 'stats' }),
+        TransactionalModule.forFeature([Stat], { dataSource: 'stats' }),
+      ],
+      providers: [StatsService],
+    }).compile();
+    await moduleRef.init();
+    service = moduleRef.get(StatsService);
+    await service.stats.clear();
+  });
+
+  afterAll(() => moduleRef.close());
+
+  it("registers the 'stats' connection so @Transactional('stats') wraps the stats DB", async () => {
+    await expect(service.recordAndFail('s1')).rejects.toThrow('stats boom');
+    await expect(service.stats.count()).resolves.toBe(0); // rolled back on the stats DB
   });
 });

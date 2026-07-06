@@ -1,13 +1,12 @@
 import { FactoryProvider } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConnectionRegistry } from '@nestjs-transactions/core';
+
 import { TransactionalModule } from '../../src/transactional.module';
 
 class Member {}
 class Order {}
 
 describe('TransactionalModule', () => {
-  beforeEach(() => ConnectionRegistry.reset());
 
   describe('forFeature', () => {
     it('registers and exports one repository provider per entity', () => {
@@ -31,13 +30,6 @@ describe('TransactionalModule', () => {
       const dynamicModule = TransactionalModule.forRoot();
       expect(dynamicModule.module).toBe(TransactionalModule);
       expect(dynamicModule.imports).toHaveLength(1);
-      expect(ConnectionRegistry.has()).toBe(true);
-    });
-
-    it('registers named connections separately', () => {
-      TransactionalModule.forRoot({ connectionName: 'stats', dataSource: 'stats' });
-      expect(ConnectionRegistry.has('stats')).toBe(true);
-      expect(ConnectionRegistry.has()).toBe(false);
     });
   });
 });

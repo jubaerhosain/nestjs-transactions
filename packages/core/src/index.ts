@@ -25,4 +25,3 @@ export type {
   TransactionalRootOptionsBase,
 } from './interfaces';
 export { createTransactionAwareProxy } from './transaction-aware-proxy';
-export { ConnectionRegistry } from './connection-registry';

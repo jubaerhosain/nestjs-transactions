@@ -4,7 +4,6 @@ import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule, ClsService } from 'nestjs-cls';
 import { Repository } from 'typeorm';
 import {
-  ConnectionRegistry,
   Transactional,
   TransactionalModule,
 } from '../../src';
@@ -52,7 +51,6 @@ describe('coexistence with a host app that owns ClsModule.forRoot (real Postgres
   let cls: ClsService;
 
   beforeAll(async () => {
-    ConnectionRegistry.reset();
     moduleRef = await Test.createTestingModule({
       imports: [
         ClsModule.forRoot({ global: true }),

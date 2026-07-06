@@ -1,11 +1,14 @@
-import { DynamicModule, FactoryProvider } from '@nestjs/common';
+import { DynamicModule } from '@nestjs/common';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { createNoOpTransactionalModule } from '@nestjs-transactions/core/testing';
 import { EntityManager } from 'typeorm';
-import { ForFeatureConnection } from '../interfaces';
-import { provideTransactionAwareRepository } from '../repository.provider';
+import { ForFeatureConnection, resolveConnection } from '../interfaces';
+import { buildFeatureProviders } from '../repository.provider';
 
-export { createNoOpTransactionalModule, NoOpTransactionalAdapter } from '@nestjs-transactions/core/testing';
+export {
+  createNoOpTransactionalModule,
+  NoOpTransactionalAdapter,
+} from '@nestjs-transactions/core/testing';
 
 export interface NoOpTypeOrmTransactionalOptions {
   /**
@@ -29,16 +32,13 @@ export interface NoOpTypeOrmTransactionalOptions {
 export function createNoOpTypeOrmTransactionalModule(
   options: NoOpTypeOrmTransactionalOptions,
 ): DynamicModule {
-  const connectionName =
-    typeof options.connection === 'string' ? options.connection : options.connection?.connectionName;
-  const providers = (options.entities ?? []).map((entity) =>
-    provideTransactionAwareRepository(entity, options.connection),
-  );
+  const { connectionName } = resolveConnection(options.connection);
+  const { providers, exports } = buildFeatureProviders(options.entities ?? [], options.connection);
   return {
     module: NoOpTypeOrmTransactionalModule,
     imports: [createNoOpTransactionalModule({ tx: options.manager, connectionName })],
     providers,
-    exports: providers.map((provider) => (provider as FactoryProvider).provide),
+    exports,
   };
 }
 

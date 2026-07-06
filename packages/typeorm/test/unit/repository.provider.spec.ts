@@ -23,6 +23,14 @@ describe('provideTransactionAwareRepository', () => {
     expect(provider.inject).toEqual([getTransactionHostToken('stats')]);
   });
 
+  it('derives the connection name from a dataSource-only object form', () => {
+    const provider = provideTransactionAwareRepository(Member, {
+      dataSource: 'stats',
+    }) as FactoryProvider;
+    expect(provider.provide).toBe(getRepositoryToken(Member, 'stats'));
+    expect(provider.inject).toEqual([getTransactionHostToken('stats')]);
+  });
+
   it('lets connectionName and dataSource differ via the object form', () => {
     const provider = provideTransactionAwareRepository(Member, {
       connectionName: 'stats',

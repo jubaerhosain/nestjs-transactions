@@ -1,4 +1,4 @@
-import { DynamicModule, FactoryProvider } from '@nestjs/common';
+import { DynamicModule } from '@nestjs/common';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { createTransactionalModule } from '@nestjs-transactions/core';
@@ -9,11 +9,12 @@ import {
 import { DataSource } from 'typeorm';
 import {
   ForFeatureConnection,
+  resolveConnection,
   TypeOrmTransactionalAsyncFactoryResult,
   TypeOrmTransactionalAsyncOptions,
   TypeOrmTransactionalOptions,
 } from './interfaces';
-import { provideTransactionAwareRepository } from './repository.provider';
+import { buildFeatureProviders } from './repository.provider';
 
 const ASYNC_OPTIONS_TOKEN = Symbol('TYPEORM_TRANSACTIONAL_ASYNC_OPTIONS');
 
@@ -30,9 +31,13 @@ class AsyncOptionsTypeOrmAdapter extends TransactionalAdapterTypeOrm {
     const original = this.optionsFactory;
     this.optionsFactory = (dataSource: DataSource, extraProviders?: any[]) => {
       const resolved = extraProviders?.[0] as TypeOrmTransactionalAsyncFactoryResult | undefined;
-      if (resolved?.defaultTxOptions) {
-        this.defaultTxOptions = resolved.defaultTxOptions as Partial<TypeOrmTransactionOptions>;
-      }
+      // Assign unconditionally: the plugin reads defaultTxOptions synchronously
+      // right after this call, and the adapter instance is shared across app
+      // compiles of the same module — a conditional assignment would leak one
+      // app's options into the next.
+      this.defaultTxOptions = resolved?.defaultTxOptions as
+        | Partial<TypeOrmTransactionOptions>
+        | undefined;
       return original(dataSource);
     };
   }
@@ -44,15 +49,13 @@ const TransactionalModuleBase = createTransactionalModule<
 >({
   adapterFactory: (options) => ({
     adapter: new TransactionalAdapterTypeOrm({
-      dataSourceToken: getDataSourceToken(options.dataSource ?? options.connectionName),
+      dataSourceToken: getDataSourceToken(resolveConnection(options).dataSource),
       defaultTxOptions: options.defaultTxOptions,
     }),
     imports: options.imports,
   }),
   asyncAdapterFactory: (options) => ({
-    adapter: new AsyncOptionsTypeOrmAdapter(
-      getDataSourceToken(options.dataSource ?? options.connectionName),
-    ),
+    adapter: new AsyncOptionsTypeOrmAdapter(getDataSourceToken(resolveConnection(options).dataSource)),
     providers: [
       {
         provide: ASYNC_OPTIONS_TOKEN,
@@ -64,6 +67,14 @@ const TransactionalModuleBase = createTransactionalModule<
 });
 
 export class TransactionalModule extends TransactionalModuleBase {
+  static override forRoot(options: TypeOrmTransactionalOptions = {}): DynamicModule {
+    return super.forRoot(withResolvedConnection(options));
+  }
+
+  static override forRootAsync(options: TypeOrmTransactionalAsyncOptions): DynamicModule {
+    return super.forRootAsync(withResolvedConnection(options));
+  }
+
   /**
    * Register transaction-aware repositories for the given entities under the
    * standard `@InjectRepository` tokens. Use instead of
@@ -74,13 +85,22 @@ export class TransactionalModule extends TransactionalModuleBase {
     entities: EntityClassOrSchema[],
     connection?: ForFeatureConnection,
   ): DynamicModule {
-    const providers = entities.map((entity) =>
-      provideTransactionAwareRepository(entity, connection),
-    );
+    const { providers, exports } = buildFeatureProviders(entities, connection);
     return {
       module: TransactionalModule,
       providers,
-      exports: providers.map((provider) => (provider as FactoryProvider).provide),
+      exports,
     };
   }
+}
+
+/**
+ * Apply the bidirectional connectionName↔dataSource defaulting before the base
+ * class registers the CLS plugin, so `forRoot({ dataSource: 'stats' })`
+ * registers the NAMED connection 'stats' rather than the default one.
+ */
+function withResolvedConnection<T extends TypeOrmTransactionalOptions | TypeOrmTransactionalAsyncOptions>(
+  options: T,
+): T {
+  return { ...options, connectionName: resolveConnection(options).connectionName };
 }

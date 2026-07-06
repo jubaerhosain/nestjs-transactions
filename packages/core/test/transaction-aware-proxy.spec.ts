@@ -14,9 +14,8 @@ class Repo {
 
 describe('createTransactionAwareProxy', () => {
   it('re-resolves the target on every access', () => {
-    const base = new Repo('base');
-    let current = base;
-    const proxy = createTransactionAwareProxy(() => current, base);
+    let current = new Repo('base');
+    const proxy = createTransactionAwareProxy(() => current);
 
     expect(proxy.label).toBe('base');
     current = new Repo('tx');
@@ -27,7 +26,7 @@ describe('createTransactionAwareProxy', () => {
     const base = new Repo('base');
     const tx = new Repo('tx');
     let current: Repo = base;
-    const proxy = createTransactionAwareProxy(() => current, base);
+    const proxy = createTransactionAwareProxy(() => current);
 
     expect(proxy.save('a')).toBe('base:a');
     current = tx;
@@ -36,43 +35,87 @@ describe('createTransactionAwareProxy', () => {
     expect(tx.rows).toEqual(['b']);
   });
 
-  it('preserves instanceof and prototype checks', () => {
-    const base = new Repo('base');
-    const proxy = createTransactionAwareProxy(() => new Repo('tx'), base);
+  it('is lazy: resolve is not called until first access', () => {
+    const resolve = jest.fn(() => new Repo('r'));
+    const proxy = createTransactionAwareProxy(resolve);
+    expect(resolve).not.toHaveBeenCalled();
+    void proxy.label;
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
 
+  it('throws a descriptive error when resolve returns undefined', () => {
+    const proxy = createTransactionAwareProxy<Repo>(() => undefined as unknown as Repo);
+    expect(() => proxy.label).toThrow(/could not resolve its target/);
+  });
+
+  it('keeps method identity stable while the resolved instance is unchanged', () => {
+    const repo = new Repo('r');
+    const proxy = createTransactionAwareProxy(() => repo);
+    expect(proxy.save).toBe(proxy.save);
+
+    const other = new Repo('o');
+    const proxyOther = createTransactionAwareProxy(() => other);
+    expect(proxyOther.save).not.toBe(proxy.save);
+  });
+
+  it('preserves instanceof and prototype checks', () => {
+    const proxy = createTransactionAwareProxy(() => new Repo('tx'));
     expect(proxy instanceof Repo).toBe(true);
     expect(Object.getPrototypeOf(proxy)).toBe(Repo.prototype);
   });
 
-  it('forwards property writes to the resolved instance', () => {
-    const base = new Repo('base');
-    const tx = new Repo('tx');
-    const proxy = createTransactionAwareProxy(() => tx, base);
+  describe('overrides overlay (spies and writes)', () => {
+    it('keeps assigned values visible across re-resolutions', () => {
+      const a = new Repo('a');
+      const b = new Repo('b');
+      let current = a;
+      const proxy = createTransactionAwareProxy(() => current);
 
-    proxy.label = 'changed';
-    expect(tx.label).toBe('changed');
-    expect(base.label).toBe('base');
-  });
+      proxy.label = 'patched';
+      expect(proxy.label).toBe('patched');
+      current = b;
+      expect(proxy.label).toBe('patched'); // shadow survives a target switch
+      expect(a.label).toBe('a'); // underlying instances untouched
+      expect(b.label).toBe('b');
+    });
 
-  it('reflects keys and `in` checks from the resolved instance', () => {
-    const base = new Repo('base');
-    const tx = new Repo('tx') as Repo & { extra?: number };
-    tx.extra = 1;
-    const proxy = createTransactionAwareProxy(() => tx, base) as Repo & { extra?: number };
+    it('keeps jest.spyOn mocks visible even when the resolved instance changes', () => {
+      const outside = new Repo('outside');
+      const insideTx = new Repo('tx');
+      let current = outside;
+      const proxy = createTransactionAwareProxy(() => current);
 
-    expect('extra' in proxy).toBe(true);
-    expect(Object.keys(proxy)).toEqual(expect.arrayContaining(['label', 'rows', 'extra']));
-    expect(proxy.extra).toBe(1);
-  });
+      const spy = jest.spyOn(proxy, 'save').mockReturnValue('mocked');
+      expect(proxy.save('x')).toBe('mocked');
 
-  it('evaluates resolve() once for the default base', () => {
-    let calls = 0;
-    const resolve = () => {
-      calls++;
-      return new Repo(`r${calls}`);
-    };
-    const proxy = createTransactionAwareProxy(resolve);
-    expect(calls).toBe(1);
-    expect(proxy.label).toBe('r2');
+      current = insideTx; // simulates entering @Transactional()
+      expect(proxy.save('y')).toBe('mocked');
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(insideTx.rows).toEqual([]); // real save never ran
+
+      spy.mockRestore();
+      expect(proxy.save('z')).toBe('tx:z'); // live resolution restored
+      expect(insideTx.rows).toEqual(['z']);
+    });
+
+    it('delete restores live resolution', () => {
+      const repo = new Repo('r');
+      const proxy = createTransactionAwareProxy(() => repo) as Repo & Record<string, unknown>;
+
+      proxy.label = 'shadow';
+      expect(proxy.label).toBe('shadow');
+      delete proxy.label;
+      expect(proxy.label).toBe('r');
+    });
+
+    it('has and ownKeys include overridden properties', () => {
+      const repo = new Repo('r');
+      const proxy = createTransactionAwareProxy(() => repo) as Repo & { extra?: number };
+
+      proxy.extra = 1;
+      expect('extra' in proxy).toBe(true);
+      expect(Object.keys(proxy)).toEqual(expect.arrayContaining(['label', 'rows', 'extra']));
+      expect('label' in proxy).toBe(true);
+    });
   });
 });
