@@ -1,5 +1,28 @@
 # @nestjs-transactions/typeorm
 
+## 2.0.0
+
+### Minor Changes
+
+- [#2](https://github.com/jubaerhosain/nestjs-transactions/pull/2) [`3fde6fc`](https://github.com/jubaerhosain/nestjs-transactions/commit/3fde6fc4f72e59e4c0b72a5bebf1996d15dfc22a) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - Typed, uniform enum surface for transaction options.
+
+  - **`IsolationLevel` enum** (`@nestjs-transactions/typeorm`): set isolation with a typed,
+    autocompletable value — `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })`.
+    Members map to TypeORM's isolation-level literals, so raw strings still work.
+  - **`Transactional` is now typed for TypeORM**: options like `{ isolationLevel }` are inferred
+    without a `<TransactionalAdapterTypeOrm>` type argument. Same runtime function (identity
+    preserved) — only the option types are specialized.
+  - **`Propagation` members are now SCREAMING_CASE** (`Propagation.REQUIRES_NEW` instead of
+    `Propagation.RequiresNew`) for consistency with `IsolationLevel`. Each member is the
+    underlying `@nestjs-cls/transactional` value, so it's accepted anywhere the library expects a
+    propagation (decorator, `TransactionHost#withTransaction`). **Breaking:** update any
+    `Propagation.PascalCase` usages to SCREAMING_CASE.
+
+### Patch Changes
+
+- Updated dependencies [[`3fde6fc`](https://github.com/jubaerhosain/nestjs-transactions/commit/3fde6fc4f72e59e4c0b72a5bebf1996d15dfc22a)]:
+  - @nestjs-transactions/core@0.3.0
+
 ## 1.0.0
 
 ### Minor Changes
