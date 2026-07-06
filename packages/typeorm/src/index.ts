@@ -24,6 +24,7 @@ export type {
 } from './interfaces';
 
 // TypeORM-specific extras
+export { IsolationLevel } from './isolation-level';
 export { provideTransactionAwareRepository } from './repository.provider';
 export { TransactionAwareRepository } from './transaction-aware.repository';
 

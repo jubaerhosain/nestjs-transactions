@@ -104,7 +104,7 @@ describe('createTransactionAwareProxy', () => {
 
       proxy.label = 'shadow';
       expect(proxy.label).toBe('shadow');
-      delete proxy.label;
+      delete (proxy as Record<string, unknown>).label;
       expect(proxy.label).toBe('r');
     });
 

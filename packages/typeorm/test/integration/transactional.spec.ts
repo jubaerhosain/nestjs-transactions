@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  IsolationLevel,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
@@ -71,7 +72,7 @@ class MemberService {
     throw new Error('nested boom');
   }
 
-  @Transactional({ isolationLevel: 'SERIALIZABLE' })
+  @Transactional<TransactionalAdapterTypeOrm>({ isolationLevel: IsolationLevel.SERIALIZABLE })
   async currentIsolationLevel(): Promise<string> {
     const [{ transaction_isolation }] = await this.repo.query(
       'SELECT current_setting(\'transaction_isolation\') AS transaction_isolation',

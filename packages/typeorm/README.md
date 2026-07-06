@@ -82,13 +82,23 @@ async audit(entry: AuditEntry) { /* commits even if the caller rolls back */ }
 
 ## Transaction options
 
+Use the `IsolationLevel` enum for autocomplete and typo-free values (its members map to
+TypeORM's isolation-level literals, so a raw string still works too):
+
 ```ts
+import {
+  IsolationLevel,
+  Transactional,
+  TransactionalAdapterTypeOrm,
+  TransactionalModule,
+} from '@nestjs-transactions/typeorm';
+
 TransactionalModule.forRoot({
-  defaultTxOptions: { isolationLevel: 'REPEATABLE READ' },
+  defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
 });
 
-// per call:
-@Transactional({ isolationLevel: 'SERIALIZABLE' })
+// per call — pass the adapter as the type argument so the options are typed:
+@Transactional<TransactionalAdapterTypeOrm>({ isolationLevel: IsolationLevel.SERIALIZABLE })
 
 // resolved async (e.g. from ConfigService):
 TransactionalModule.forRootAsync({
@@ -181,7 +191,7 @@ const moduleRef = await Test.createTestingModule({
 | Repositories | `TypeOrmModule.forFeature([E])` | `TransactionalModule.forFeature([E])` |
 | Decorator | `@Transactional()` | `@Transactional()` (unchanged) |
 | Propagation | `{ propagation: Propagation.REQUIRES_NEW }` | `@Transactional(Propagation.RequiresNew)` |
-| Isolation | `{ isolationLevel: IsolationLevel.SERIALIZABLE }` | `@Transactional({ isolationLevel: 'SERIALIZABLE' })` |
+| Isolation | `{ isolationLevel: IsolationLevel.SERIALIZABLE }` | `@Transactional<TransactionalAdapterTypeOrm>({ isolationLevel: IsolationLevel.SERIALIZABLE })` |
 | Hooks | `runOnTransactionCommit/Rollback` | use database/app events or `withTransaction` wrappers |
 | Mechanism | monkey-patches `DataSource`/`Repository` prototypes | plain DI + CLS — nothing is patched |
 
