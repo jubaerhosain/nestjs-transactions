@@ -27,3 +27,10 @@ export type {
   TransactionalRootOptionsBase,
 } from './interfaces';
 export { createTransactionAwareProxy } from './transaction-aware-proxy';
+
+// Transaction lifecycle hooks (typeorm-transactional parity)
+export {
+  runOnTransactionCommit,
+  runOnTransactionComplete,
+  runOnTransactionRollback,
+} from './transaction-hooks';

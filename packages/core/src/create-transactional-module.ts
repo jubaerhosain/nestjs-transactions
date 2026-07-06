@@ -7,6 +7,7 @@ import {
   TransactionalModuleDefinition,
   TransactionalRootOptionsBase,
 } from './interfaces';
+import { applyTransactionHooks } from './transaction-hooks';
 
 export interface TransactionalModuleBaseClass<
   TOptions extends TransactionalRootOptionsBase,
@@ -54,6 +55,9 @@ function buildDynamicModule(
   registration: AdapterRegistration,
   extraImports: DynamicModule['imports'] = [],
 ): DynamicModule {
+  // Give every adapter built through core commit/rollback/complete hooks by
+  // wrapping its transaction boundary before the plugin consumes it.
+  applyTransactionHooks(registration.adapter, options.connectionName);
   const plugin = new ClsPluginTransactional({
     connectionName: options.connectionName,
     enableTransactionProxy: options.enableTransactionProxy,
