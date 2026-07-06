@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [20, 22, 24]
+        # pnpm 11 needs Node >= 22.13, so 20 can't be exercised here even though
+        # the published packages still support it (engines >= 20, plain ES2022 CJS)
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
