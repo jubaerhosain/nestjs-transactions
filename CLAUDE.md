@@ -67,6 +67,16 @@ pnpm -r test:int              # jest.integration.config.js, --runInBand
 - **`main` is protected** (branch ruleset). Work on a branch and open a PR.
   Required CI checks: `lint`, `typecheck`, `build-test` (Node 22 & 24), and
   `integration`. See `.github/workflows/ci.yml`.
+- **Nightly dependency upgrades** (`.github/workflows/deps-upgrade.yml`): a
+  scheduled job (03:00 UTC + manual `workflow_dispatch`) runs `pnpm update -r`
+  (newest in-range versions, no major bumps — pnpm 11 also rewrites the caret
+  floors in `package.json`, so the PR touches `package.json` + `pnpm-lock.yaml`)
+  and force-updates a single standing PR on branch `deps/nightly-upgrade`. It is a
+  **PR-producer, not a required check** — the normal CI checks above validate the
+  PR. It opens the PR with a repo secret PAT **`DEPS_PR_TOKEN`** (Contents +
+  Pull requests: write); the default `GITHUB_TOKEN` is deliberately not used
+  because token-authored PRs don't trigger CI. If CI stops running on that PR,
+  check the `DEPS_PR_TOKEN` secret first.
 - **TypeScript** (`tsconfig.base.json`): `node16` module/resolution, ES2022 CJS,
   `strict`, `isolatedModules`, `experimentalDecorators` + `emitDecoratorMetadata`.
 - **ESLint:** `@typescript-eslint/no-explicit-any` and

@@ -1,0 +1,46 @@
+name: Nightly Dependency Upgrade
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC nightly
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+concurrency:
+  group: deps-upgrade
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install (baseline lockfile)
+        run: pnpm install --frozen-lockfile
+      - name: Upgrade within semver ranges
+        run: pnpm update -r # newest in-range versions; bumps caret floors in package.json + lockfile, no majors
+      - name: Open / update upgrade PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.DEPS_PR_TOKEN }} # PAT so CI runs on the PR
+          branch: deps/nightly-upgrade # standing branch → one reused PR
+          base: main
+          delete-branch: true # closes PR + deletes branch when nothing to upgrade
+          commit-message: 'chore(deps): nightly dependency upgrade'
+          title: 'chore(deps): nightly dependency upgrade'
+          labels: dependencies
+          body: |
+            Automated nightly dependency upgrade via `pnpm update -r`
+            (newest in-range versions, no major bumps — updates `package.json`
+            caret floors and `pnpm-lock.yaml`).
+
+            Merge once all CI checks (lint, typecheck, build-test, integration) pass.
+            This PR is force-updated each night; no need to close stale copies.

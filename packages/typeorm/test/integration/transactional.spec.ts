@@ -92,9 +92,53 @@ class MemberService {
   @Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })
   async currentIsolationLevel(): Promise<string> {
     const [{ transaction_isolation }] = await this.repo.query(
-      'SELECT current_setting(\'transaction_isolation\') AS transaction_isolation',
+      "SELECT current_setting('transaction_isolation') AS transaction_isolation",
     );
     return transaction_isolation;
+  }
+
+  // --- decorator-to-decorator nesting: both methods carry @Transactional, and
+  // the inner one is reached through `this.` so it re-enters its own decorator. ---
+
+  @Transactional()
+  async outerRequiredInnerRequiresNew(outer: string, inner: string): Promise<void> {
+    await this.repo.save({ name: outer });
+    await this.createIndependently(inner); // REQUIRES_NEW — commits independently
+    throw new Error('outer boom');
+  }
+
+  @Transactional()
+  async outerSwallowsFailedNested(a: string, b: string, c: string): Promise<void> {
+    await this.repo.save({ name: a });
+    await this.createNested(b).catch(() => undefined); // NESTED throws → savepoint rollback
+    await this.repo.save({ name: c }); // outer tx keeps going after the savepoint rollback
+  }
+
+  @Transactional()
+  async outerRequiredInnerMandatory(outer: string, inner: string): Promise<void> {
+    await this.repo.save({ name: outer });
+    await this.requiresExistingTx(inner); // MANDATORY joins the outer tx
+    throw new Error('outer boom');
+  }
+
+  @Transactional({
+    propagation: Propagation.REQUIRES_NEW,
+    isolationLevel: IsolationLevel.SERIALIZABLE,
+  })
+  async isolationInRequiresNew(): Promise<string> {
+    const [{ transaction_isolation }] = await this.repo.query(
+      "SELECT current_setting('transaction_isolation') AS transaction_isolation",
+    );
+    return transaction_isolation;
+  }
+
+  @Transactional()
+  async outerReadCommittedInnerSerializable(): Promise<{ outer: string; inner: string }> {
+    const [{ transaction_isolation: outer }] = await this.repo.query(
+      "SELECT current_setting('transaction_isolation') AS transaction_isolation",
+    );
+    const inner = await this.isolationInRequiresNew();
+    return { outer, inner };
   }
 }
 
@@ -250,6 +294,36 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
 
   it('honors per-call isolation levels', async () => {
     await expect(service.currentIsolationLevel()).resolves.toBe('serializable');
+  });
+
+  describe('nested @Transactional combinations (decorator-to-decorator)', () => {
+    it('outer REQUIRED + inner REQUIRES_NEW: the inner commit survives the outer rollback', async () => {
+      await expect(service.outerRequiredInnerRequiresNew('outer', 'inner')).rejects.toThrow(
+        'outer boom',
+      );
+      const names = (await service.repo.find()).map((m) => m.name);
+      expect(names).toEqual(['inner']);
+    });
+
+    it('outer REQUIRED + inner NESTED: a failed savepoint does not poison the outer tx', async () => {
+      await service.outerSwallowsFailedNested('a', 'b', 'c');
+      const names = (await service.repo.find()).map((m) => m.name).sort();
+      // 'b' rolled back to its savepoint; 'a' (before) and 'c' (after) still commit.
+      expect(names).toEqual(['a', 'c']);
+    });
+
+    it('outer REQUIRED + inner MANDATORY: the joined inner rolls back with the outer', async () => {
+      await expect(service.outerRequiredInnerMandatory('outer', 'inner')).rejects.toThrow(
+        'outer boom',
+      );
+      await expect(service.repo.count()).resolves.toBe(0);
+    });
+
+    it('{ propagation: REQUIRES_NEW, isolationLevel } opens an independent inner tx at that level', async () => {
+      const { outer, inner } = await service.outerReadCommittedInnerSerializable();
+      expect(outer).toBe('read committed'); // outer keeps the connection default
+      expect(inner).toBe('serializable'); // inner tx begins at the requested level
+    });
   });
 
   // Regression for the review finding: spies used to land on the fallback

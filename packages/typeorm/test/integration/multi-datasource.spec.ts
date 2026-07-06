@@ -50,6 +50,21 @@ class ReportingService {
     );
     return transaction_isolation;
   }
+
+  @Transactional({ connectionName: 'stats' })
+  async recordStat(label: string): Promise<void> {
+    await this.stats.save({ label });
+  }
+
+  // Outer tx on the DEFAULT connection nests an inner tx on the 'stats'
+  // connection — two independent TransactionHosts, so the inner commits on its
+  // own connection even though the outer connection rolls back.
+  @Transactional()
+  async writeMemberThenRecordStat(name: string, label: string): Promise<void> {
+    await this.members.save({ name });
+    await this.recordStat(label);
+    throw new Error('default boom');
+  }
 }
 
 describe('multiple data sources (real Postgres, two databases)', () => {
@@ -100,6 +115,12 @@ describe('multiple data sources (real Postgres, two databases)', () => {
     await expect(service.stats.count()).resolves.toBe(1);
     // Ran on the stats connection only — the default connection is untouched.
     await expect(service.members.count()).resolves.toBe(0);
+  });
+
+  it('nesting a stats-connection tx inside a default-connection tx keeps them independent', async () => {
+    await expect(service.writeMemberThenRecordStat('m1', 's1')).rejects.toThrow('default boom');
+    await expect(service.members.count()).resolves.toBe(0); // default connection rolled back
+    await expect(service.stats.count()).resolves.toBe(1); // stats connection committed independently
   });
 
   it('repositories resolve against their own data source', async () => {
