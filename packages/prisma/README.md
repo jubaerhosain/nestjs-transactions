@@ -98,6 +98,8 @@ your mock.
   (error `P2028`). Raise it via `defaultTxOptions: { timeout }` in `forRoot` or
   per call.
 - `Propagation.NESTED` requires `sqlFlavor` (savepoints are emulated with raw
-  SQL — not available on MongoDB).
+  SQL — not available on MongoDB). Without `sqlFlavor`, a `NESTED` call inside
+  a transaction logs a warning and runs as an **independent** transaction
+  (like `REQUIRES_NEW`) — it does not join the outer one.
 - The sequential/batch `$transaction([...])` form is not supported (inherent to
   the CLS design). `REQUIRES_NEW` uses a second pooled connection.

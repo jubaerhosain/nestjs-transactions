@@ -53,10 +53,13 @@ connectionName? })`. `prismaToken` is required — the DI token the app's
   this repo's CJS/node16 setup. `typecheck`/`test:int` scripts chain
   `prisma generate` (the integration tests import the generated client).
 - Known limitations to keep documented: `NESTED` needs `sqlFlavor` (no
-  MongoDB); Prisma's interactive-transaction default `timeout` is **5s**
-  (`P2028`) — raise via `defaultTxOptions` or per call; the sequential/batch
-  `$transaction([...])` form is unsupported (inherent to the CLS design);
-  `REQUIRES_NEW` takes a second pooled connection.
+  MongoDB) — **without it, `Propagation.NESTED` inside a transaction logs a
+  warning and opens an INDEPENDENT transaction (REQUIRES_NEW-like), it does
+  not join the outer one** (upstream fallback, pinned by
+  `test/unit/propagation.spec.ts`); Prisma's interactive-transaction default
+  `timeout` is **5s** (`P2028`) — raise via `defaultTxOptions` or per call; the
+  sequential/batch `$transaction([...])` form is unsupported (inherent to the
+  CLS design); `REQUIRES_NEW` takes a second pooled connection.
 
 ## Testing
 

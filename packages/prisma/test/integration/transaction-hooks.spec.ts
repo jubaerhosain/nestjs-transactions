@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  Propagation,
   runOnTransactionCommit,
   runOnTransactionComplete,
   runOnTransactionRollback,
@@ -12,6 +13,15 @@ import { TransactionalModule } from '../../src/transactional.module';
 import { PrismaModule, PrismaService } from './fixtures';
 
 const events: string[] = [];
+
+function registerHooks(label: string): void {
+  runOnTransactionCommit(() => {
+    events.push(`commit:${label}`);
+  });
+  runOnTransactionRollback((error) => {
+    events.push(`rollback:${label}:${error.message}`);
+  });
+}
 
 @Injectable()
 class AuthorService {
@@ -32,6 +42,71 @@ class AuthorService {
     if (fail) {
       throw new Error('boom');
     }
+  }
+
+  @Transactional({ propagation: Propagation.REQUIRES_NEW })
+  async innerRequiresNew(name: string): Promise<void> {
+    registerHooks('inner');
+    await this.prisma.author.create({ data: { name } });
+  }
+
+  @Transactional()
+  async outerRollbackWithRequiresNew(name: string): Promise<void> {
+    registerHooks('outer');
+    await this.prisma.author.create({ data: { name } });
+    await this.innerRequiresNew(`${name}-independent`);
+    throw new Error('outer-boom');
+  }
+
+  @Transactional({ propagation: Propagation.NESTED })
+  async innerNested(name: string, fail: boolean): Promise<void> {
+    registerHooks('nested');
+    await this.prisma.author.create({ data: { name } });
+    if (fail) {
+      throw new Error('savepoint-boom');
+    }
+  }
+
+  @Transactional()
+  async outerWithFailingNested(name: string): Promise<void> {
+    registerHooks('outer');
+    await this.prisma.author.create({ data: { name } });
+    await this.innerNested(`${name}-nested`, true).catch(() => undefined);
+  }
+
+  @Transactional()
+  async joinedInner(name: string, fail = false): Promise<void> {
+    await this.prisma.author.create({ data: { name } });
+    await this.registerFromJoined();
+    if (fail) {
+      throw new Error('outer-boom');
+    }
+  }
+
+  @Transactional()
+  async registerFromJoined(): Promise<void> {
+    registerHooks('joined');
+  }
+
+  @Transactional({ propagation: Propagation.NOT_SUPPORTED })
+  async registerWhileSuspended(): Promise<void> {
+    registerHooks('suspended');
+  }
+
+  @Transactional()
+  async callSuspendedRegistration(): Promise<void> {
+    await this.registerWhileSuspended();
+  }
+
+  @Transactional()
+  async createThenWriteFromCommitHook(name: string): Promise<void> {
+    // The transaction client is closed by the time commit hooks run; the
+    // injected proxy must resolve back to the base client there.
+    runOnTransactionCommit(async () => {
+      await this.prisma.author.create({ data: { name: `${name}-from-hook` } });
+      events.push(`hook-write:${name}`);
+    });
+    await this.prisma.author.create({ data: { name } });
   }
 }
 
@@ -78,5 +153,55 @@ describe('transaction hooks with Prisma (integration)', () => {
     await expect(service.create('ada', true)).rejects.toThrow('boom');
     expect(events).toEqual(['rollback:ada:boom', 'complete:ada:boom']);
     await expect(prisma.author.count()).resolves.toBe(0);
+  });
+
+  it('REQUIRES_NEW: inner commit hooks fire although the outer rolls back — no cross-firing', async () => {
+    await expect(service.outerRollbackWithRequiresNew('ada')).rejects.toThrow('outer-boom');
+
+    expect(events).toContain('commit:inner');
+    expect(events).toContain('rollback:outer:outer-boom');
+    expect(events).not.toContain('rollback:inner:outer-boom');
+    expect(events).not.toContain('commit:outer');
+
+    const names = (await prisma.author.findMany()).map((a) => a.name);
+    expect(names).toEqual(['ada-independent']);
+  });
+
+  it("NESTED: the savepoint's rollback hooks fire on its own outcome while the outer commits", async () => {
+    await service.outerWithFailingNested('ada');
+
+    expect(events).toContain('rollback:nested:savepoint-boom');
+    expect(events).toContain('commit:outer');
+    expect(events).not.toContain('commit:nested');
+    expect(events).not.toContain('rollback:outer:savepoint-boom');
+
+    const names = (await prisma.author.findMany()).map((a) => a.name);
+    expect(names).toEqual(['ada']);
+  });
+
+  it('joined REQUIRED: hooks registered in the inner method settle with the outer transaction', async () => {
+    await service.joinedInner('ada');
+    expect(events).toContain('commit:joined');
+
+    events.splice(0);
+    await expect(service.joinedInner('grace', true)).rejects.toThrow('outer-boom');
+    expect(events).toContain('rollback:joined:outer-boom');
+    expect(events).not.toContain('commit:joined');
+  });
+
+  it('registering a hook outside any transaction throws', () => {
+    expect(() => registerHooks('nowhere')).toThrow(/No active transaction/);
+  });
+
+  it('registering a hook inside a suspended NOT_SUPPORTED scope throws', async () => {
+    await expect(service.callSuspendedRegistration()).rejects.toThrow(/No active transaction/);
+  });
+
+  it('a commit hook can write through the injected client (base client, post-commit)', async () => {
+    await service.createThenWriteFromCommitHook('ada');
+
+    expect(events).toContain('hook-write:ada');
+    const names = (await prisma.author.findMany()).map((a) => a.name).sort();
+    expect(names).toEqual(['ada', 'ada-from-hook']);
   });
 });

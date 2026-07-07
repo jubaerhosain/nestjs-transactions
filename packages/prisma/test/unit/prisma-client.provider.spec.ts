@@ -50,4 +50,46 @@ describe('provideTransactionAwarePrismaClient', () => {
     txHost.tx = tx;
     expect(proxy.marker).toBe('tx');
   });
+
+  it('throws a descriptive error when the current client resolves to undefined', () => {
+    const proxy = buildProxy({ tx: undefined });
+    expect(() => proxy.marker).toThrow(TypeError);
+    expect(() => proxy.marker).toThrow(/resolve|undefined/i);
+  });
+
+  it('keeps method identity stable per client instance and re-binds on switch', () => {
+    const base = { $queryRaw: jest.fn() };
+    const tx = { $queryRaw: jest.fn() };
+    const txHost = { tx: base as any };
+    const proxy = buildProxy(txHost);
+
+    expect(proxy.$queryRaw).toBe(proxy.$queryRaw);
+    const boundToBase = proxy.$queryRaw;
+
+    txHost.tx = tx;
+    expect(proxy.$queryRaw).toBe(proxy.$queryRaw);
+    expect(proxy.$queryRaw).not.toBe(boundToBase);
+
+    proxy.$queryRaw('q');
+    expect(tx.$queryRaw).toHaveBeenCalledWith('q');
+    expect(base.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('a jest.spyOn override survives a transaction-client switch and restores cleanly', async () => {
+    const base = { author: 'base-author' };
+    const tx = { author: 'tx-author' };
+    const txHost = { tx: base as any };
+    const proxy = buildProxy(txHost);
+
+    Object.defineProperty(proxy, 'author', { value: 'mocked', configurable: true });
+    expect(proxy.author).toBe('mocked');
+
+    txHost.tx = tx;
+    // The override overlay wins regardless of which client is current…
+    expect(proxy.author).toBe('mocked');
+
+    // …and deleting it restores live resolution against the current client.
+    delete (proxy as any).author;
+    expect(proxy.author).toBe('tx-author');
+  });
 });

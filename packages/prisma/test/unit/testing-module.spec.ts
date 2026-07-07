@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { runOnTransactionCommit } from '@nestjs-transactions/core';
+import { runOnTransactionCommit, runOnTransactionRollback } from '@nestjs-transactions/core';
 import { InjectPrismaClient } from '../../src/prisma-client.provider';
 import { Transactional } from '../../src/transactional';
 import { createNoOpPrismaTransactionalModule } from '../../src/testing';
@@ -43,5 +43,50 @@ describe('createNoOpPrismaTransactionalModule', () => {
     }).compile();
 
     expect(moduleRef.get(AuthorService)).toBeDefined();
+  });
+
+  it('fires rollback hooks when the decorated method throws', async () => {
+    const rollbacks: string[] = [];
+
+    @Injectable()
+    class FailingService {
+      @Transactional()
+      async explode(): Promise<void> {
+        runOnTransactionRollback((error) => {
+          rollbacks.push(error.message);
+        });
+        throw new Error('boom');
+      }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [createNoOpPrismaTransactionalModule()],
+      providers: [FailingService],
+    }).compile();
+
+    await expect(moduleRef.get(FailingService).explode()).rejects.toThrow('boom');
+    expect(rollbacks).toEqual(['boom']);
+  });
+
+  it('supports a named connection end to end', async () => {
+    const client = { author: { create: jest.fn().mockResolvedValue({ id: 7 }) } };
+
+    @Injectable()
+    class NamedService {
+      constructor(@InjectPrismaClient('analytics') private readonly prisma: any) {}
+
+      @Transactional({ connectionName: 'analytics' })
+      async create(name: string): Promise<{ id: number }> {
+        return this.prisma.author.create({ data: { name } });
+      }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [createNoOpPrismaTransactionalModule({ client, connectionName: 'analytics' })],
+      providers: [NamedService],
+    }).compile();
+
+    await expect(moduleRef.get(NamedService).create('grace')).resolves.toEqual({ id: 7 });
+    expect(client.author.create).toHaveBeenCalledWith({ data: { name: 'grace' } });
   });
 });
