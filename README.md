@@ -20,7 +20,7 @@ export class MemberService {
 Transaction management shouldn't leak into your code. You keep your `@InjectRepository(Entity)` repositories, add `@Transactional()` to a method, and the repository quietly runs on the active transaction — no `EntityManager` or `queryRunner` threaded through your services, no boilerplate.
 
 - **Invisible propagation.** Transactions flow through CLS (`AsyncLocalStorage`), so a call several services deep joins the same transaction and rolls back together.
-- **No monkey-patching.** It's ordinary NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — TypeORM's classes are never patched at startup.
+- **Plain dependency injection.** It's built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — TypeORM's classes are never patched at startup, so a library upgrade can't silently break you.
 - **Familiar ergonomics.** Inspired by a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 ## Packages
