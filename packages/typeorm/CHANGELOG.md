@@ -1,5 +1,13 @@
 # @nestjs-transactions/typeorm
 
+## 4.0.2
+
+### Patch Changes
+
+- [#12](https://github.com/jubaerhosain/nestjs-transactions/pull/12) [`68c2043`](https://github.com/jubaerhosain/nestjs-transactions/commit/68c2043e04af386516909a3226b8758e506aaf2a) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - docs: clarify that `TypeOrmModule.forRoot()` and `TransactionalModule.forRoot()`
+  are both required and why — one owns the connection, the other owns transaction
+  propagation. Also fix the missing `TypeOrmModule` import in the Quick start.
+
 ## 4.0.1
 
 ### Patch Changes
