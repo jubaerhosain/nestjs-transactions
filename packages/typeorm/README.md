@@ -1,6 +1,6 @@
 # @nestjs-transactions/typeorm
 
-**Silent `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. A drop-in replacement DX for the abandoned [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional), built entirely on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — standard NestJS DI, **zero monkey-patching**.
+**Silent `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **nothing is rewritten at boot**. Inspired by a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 ## Install
 
@@ -29,7 +29,7 @@ Both root imports are required and do different jobs:
 - **`TypeOrmModule.forRoot()`** (from `@nestjs/typeorm`) owns the **database connection** — the `DataSource`, pool, and entity metadata. Standard NestJS + TypeORM; nothing here is specific to this package.
 - **`TransactionalModule.forRoot()`** owns **transaction propagation** — it registers the `@nestjs-cls/transactional` CLS plugin that powers `@Transactional()` (starting/committing/rolling back transactions and swapping the active `EntityManager`). It does **not** create a connection; it resolves the `DataSource` that `TypeOrmModule` registered.
 
-Neither replaces the other: with only `TypeOrmModule`, `@Transactional()` does nothing; with only `TransactionalModule`, there is no `DataSource` to run transactions against. Register both once at the app root — this mirrors `typeorm-transactional`'s bootstrap, minus the monkey-patching (see [Migrating](#migrating-from-typeorm-transactional)).
+Neither replaces the other: with only `TypeOrmModule`, `@Transactional()` does nothing; with only `TransactionalModule`, there is no `DataSource` to run transactions against. Register both once at the app root.
 
 ```ts
 // member.module.ts — use INSTEAD of TypeOrmModule.forFeature([Member])
@@ -64,7 +64,7 @@ If `register` throws, everything rolls back — including writes made in `Accoun
 
 ## How it works
 
-`forFeature([Member])` registers a provider under TypeORM's standard repository token — the exact token `@InjectRepository` resolves — whose value is a lazy proxy over `txHost.tx.getRepository(Member)`. `txHost.tx` is the transactional `EntityManager` inside `@Transactional()` and the regular one outside. No prototypes are patched; it is ordinary NestJS dependency injection.
+`forFeature([Member])` registers a provider under TypeORM's standard repository token — the exact token `@InjectRepository` resolves — whose value is a lazy proxy over `txHost.tx.getRepository(Member)`. `txHost.tx` is the transactional `EntityManager` inside `@Transactional()` and the regular one outside. Nothing is rewritten at boot; it is ordinary NestJS dependency injection.
 
 ## Propagation
 
@@ -135,9 +135,8 @@ from the data source name, pass both explicitly:
 ## Transaction hooks
 
 Register callbacks from inside a `@Transactional()` method (or
-`TransactionHost#withTransaction`) that fire after the transaction settles — the same
-`runOnTransactionCommit` / `runOnTransactionRollback` / `runOnTransactionComplete` API as
-`typeorm-transactional`:
+`TransactionHost#withTransaction`) that fire after the transaction settles, via the
+`runOnTransactionCommit` / `runOnTransactionRollback` / `runOnTransactionComplete` API:
 
 ```ts
 import { runOnTransactionCommit, runOnTransactionRollback, Transactional } from '@nestjs-transactions/typeorm';
@@ -237,20 +236,13 @@ const moduleRef = await Test.createTestingModule({
 
 `@Transactional()` methods run without real transactions and `@InjectRepository(Member)` resolves to your mock.
 
-## Migrating from `typeorm-transactional`
+## Coming from a decorator-based transaction library?
 
-|              | `typeorm-transactional`                                           | `@nestjs-transactions/typeorm`                                                                            |
-| ------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Bootstrap    | `initializeTransactionalContext()` before everything              | `TransactionalModule.forRoot()` in `AppModule`                                                            |
-| DataSource   | `addTransactionalDataSource(ds)`                                  | automatic (uses `@nestjs/typeorm` tokens)                                                                 |
-| Repositories | `TypeOrmModule.forFeature([E])`                                   | `TransactionalModule.forFeature([E])`                                                                     |
-| Decorator    | `@Transactional()`                                                | `@Transactional()` (unchanged)                                                                            |
-| Propagation  | `@Transactional({ propagation: Propagation.REQUIRES_NEW })`       | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` (same syntax)                                 |
-| Isolation    | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` (same syntax)                           |
-| Hooks        | `runOnTransactionCommit/Rollback/Complete`                        | `runOnTransactionCommit/Rollback/Complete` (same functions — see [Transaction hooks](#transaction-hooks)) |
-| Mechanism    | monkey-patches `DataSource`/`Repository` prototypes               | plain DI + CLS — nothing is patched                                                                       |
+If you're used to marking methods `@Transactional()` and letting your repositories run inside the transaction, the setup here is deliberately small:
 
-Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, and update `Propagation`/`IsolationLevel`/hook imports. Services keep `@InjectRepository` + `@Transactional({ ... })` unchanged — the decorator's options-object syntax is the same as `typeorm-transactional`'s.
+- Register `TransactionalModule.forRoot()` once at the app root (no global bootstrap call before startup, no manual data-source registration — it resolves the `DataSource` through the standard `@nestjs/typeorm` tokens).
+- Use `TransactionalModule.forFeature([Entity])` where you'd register repositories for a feature.
+- Keep your services exactly as they are: `@InjectRepository(Entity)` plus `@Transactional({ ... })`, with the same options-object syntax for `Propagation`, `IsolationLevel`, and the lifecycle hooks.
 
 ## Caveats
 
