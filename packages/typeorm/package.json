@@ -1,6 +1,6 @@
 {
   "name": "@nestjs-transactions/typeorm",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "Declarative @Transactional() for NestJS + TypeORM: keep @InjectRepository, drop the boilerplate. Drop-in replacement DX for typeorm-transactional without monkey-patching.",
   "license": "MIT",
   "author": "Jubaer Hosain",
