@@ -38,7 +38,9 @@ export function createTransactionAwareProxy<T extends object>(resolve: () => T):
     get(_target, prop, receiver) {
       const override = overrides.get(prop);
       if (override) {
-        return 'get' in override || 'set' in override ? override.get?.call(receiver) : override.value;
+        return 'get' in override || 'set' in override
+          ? override.get?.call(receiver)
+          : override.value;
       }
       const current = resolveOrThrow();
       const value = Reflect.get(current, prop, current);

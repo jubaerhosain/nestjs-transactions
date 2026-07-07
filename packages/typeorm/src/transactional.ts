@@ -53,5 +53,9 @@ export function Transactional(options: TransactionalOptions = {}): MethodDecorat
   // resolveConnection's normalization so `@Transactional({ connectionName:
   // 'default' })` targets the default host instead of throwing
   // "TransactionHost not initialized".
-  return delegate(normalizeName(connectionName), propagation, adapterOptions as TypeOrmTransactionOptions);
+  return delegate(
+    normalizeName(connectionName),
+    propagation,
+    adapterOptions as TypeOrmTransactionOptions,
+  );
 }

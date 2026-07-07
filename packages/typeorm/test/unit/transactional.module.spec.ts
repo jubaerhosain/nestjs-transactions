@@ -7,7 +7,6 @@ class Member {}
 class Order {}
 
 describe('TransactionalModule', () => {
-
   describe('forFeature', () => {
     it('registers and exports one repository provider per entity', () => {
       const dynamicModule = TransactionalModule.forFeature([Member, Order]);

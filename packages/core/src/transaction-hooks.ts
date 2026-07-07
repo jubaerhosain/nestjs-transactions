@@ -131,7 +131,10 @@ async function runHooks(
     try {
       await hook(arg);
     } catch (err) {
-      logger.error('A transaction hook threw and was ignored', toError(err));
+      // Nest's Logger.error treats the second argument as a stack STRING; an
+      // Error object there would print as a raw extra message instead.
+      const error = toError(err);
+      logger.error(`A transaction hook threw and was ignored: ${error.message}`, error.stack);
     }
   }
 }

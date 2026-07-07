@@ -109,6 +109,32 @@ describe('provideTransactionAwareRepository', () => {
     expect(manager.getTreeRepository).not.toHaveBeenCalled();
   });
 
+  it('re-checks the tree decision when entity metadata was not yet available', () => {
+    // First access happens before the DataSource has built its metadata: the
+    // decision must NOT be frozen as "plain" — once metadata exists, a tree
+    // entity has to resolve through getTreeRepository.
+    const plainRepo = { kind: 'plain' };
+    const treeRepo = { kind: 'tree' };
+    let metadataReady = false;
+    const manager = {
+      getRepository: jest.fn(() => plainRepo),
+      getTreeRepository: jest.fn(() => treeRepo),
+      connection: {
+        hasMetadata: jest.fn(() => metadataReady),
+        getMetadata: () => ({ treeType: 'closure-table' }),
+      },
+    };
+
+    const provider = provideTransactionAwareRepository(Member) as FactoryProvider;
+    const proxy = provider.useFactory(fakeTxHost(manager));
+
+    expect(proxy.kind).toBe('plain'); // metadata missing → plain lookup for now
+    metadataReady = true;
+    expect(proxy.kind).toBe('tree'); // retried, not frozen as plain
+    expect(proxy.kind).toBe('tree'); // and cached from here on
+    expect(manager.connection.hasMetadata).toHaveBeenCalledTimes(2);
+  });
+
   it('uses getTreeRepository for tree entities', () => {
     const treeRepo = { kind: 'tree' };
     const manager = {

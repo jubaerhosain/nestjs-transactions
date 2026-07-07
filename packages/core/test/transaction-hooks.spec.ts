@@ -177,8 +177,8 @@ describe('transaction hooks', () => {
     expect(service.events).toEqual(['after-throw']);
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'A transaction hook threw and was ignored',
-      expect.any(Error),
+      'A transaction hook threw and was ignored: hook exploded',
+      expect.stringContaining('hook exploded'), // the stack, as a string for Nest's Logger
     );
     await moduleRef.close();
   });

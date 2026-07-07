@@ -18,10 +18,7 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 import { TransactionalModule } from '@nestjs-transactions/typeorm';
 
 @Module({
-  imports: [
-    TypeOrmModule.forRoot({ /* ... */ }),
-    TransactionalModule.forRoot(),
-  ],
+  imports: [TypeOrmModule.forRoot({/* ... */}), TransactionalModule.forRoot()],
 })
 export class AppModule {}
 ```
@@ -50,7 +47,7 @@ export class MemberService {
   async register(name: string) {
     const member = await this.repo.save({ name });
     await this.accounting.openAccount(member); // joins the SAME transaction —
-    return member;                             // no decorator needed there
+    return member; // no decorator needed there
   }
 }
 ```
@@ -70,15 +67,15 @@ import { Propagation, Transactional } from '@nestjs-transactions/typeorm';
 async audit(entry: AuditEntry) { /* commits even if the caller rolls back */ }
 ```
 
-| Mode | Behavior |
-|---|---|
-| `REQUIRED` *(default)* | Join the current transaction, or start one |
-| `REQUIRES_NEW` | Always start an independent transaction |
-| `NESTED` | Savepoint: inner rollback doesn't kill the outer tx |
-| `MANDATORY` | Throw `TransactionNotActiveError` if no transaction |
-| `NEVER` | Throw `TransactionAlreadyActiveError` if inside one |
-| `SUPPORTS` | Join if present, run plainly otherwise |
-| `NOT_SUPPORTED` | Suspend the transaction for this call |
+| Mode                   | Behavior                                            |
+| ---------------------- | --------------------------------------------------- |
+| `REQUIRED` _(default)_ | Join the current transaction, or start one          |
+| `REQUIRES_NEW`         | Always start an independent transaction             |
+| `NESTED`               | Savepoint: inner rollback doesn't kill the outer tx |
+| `MANDATORY`            | Throw `TransactionNotActiveError` if no transaction |
+| `NEVER`                | Throw `TransactionAlreadyActiveError` if inside one |
+| `SUPPORTS`             | Join if present, run plainly otherwise              |
+| `NOT_SUPPORTED`        | Suspend the transaction for this call               |
 
 ## Transaction options
 
@@ -127,6 +124,37 @@ equivalent to the string form — each side defaults to the other. If the connec
 from the data source name, pass both explicitly:
 `TransactionalModule.forFeature([Stat], { connectionName: 'stats', dataSource: 'statsDb' })`.
 
+## Transaction hooks
+
+Register callbacks from inside a `@Transactional()` method (or
+`TransactionHost#withTransaction`) that fire after the transaction settles — the same
+`runOnTransactionCommit` / `runOnTransactionRollback` / `runOnTransactionComplete` API as
+`typeorm-transactional`:
+
+```ts
+import { runOnTransactionCommit, runOnTransactionRollback, Transactional } from '@nestjs-transactions/typeorm';
+
+@Transactional()
+async register(name: string) {
+  const member = await this.repo.save({ name });
+  runOnTransactionCommit(() => this.mailer.sendWelcome(member)); // only after COMMIT
+  runOnTransactionRollback((err) => this.metrics.registrationFailed(err));
+  return member;
+}
+```
+
+- Hooks attach to the **innermost active** transaction: a `REQUIRES_NEW` or `NESTED` block's
+  hooks fire on its own outcome; a `REQUIRED`-joined method's hooks fire with the outer
+  transaction.
+- Async hooks are awaited sequentially (in registration order) before the transactional
+  method's promise settles; commit hooks run on the **base** connection (the transaction has
+  already committed), so repository calls inside them work.
+- A throwing hook is caught and logged — it never masks the method's own result, and the
+  remaining hooks still run. `runOnTransactionComplete` receives the rollback error, or
+  `undefined` on commit.
+- Registering a hook outside an active transaction (including inside a suspended
+  `NOT_SUPPORTED`/`NEVER` scope) throws.
+
 ## Programmatic control
 
 ```ts
@@ -146,7 +174,11 @@ For a named connection inject with `@InjectTransactionHost('stats')`.
 `repo.extend()` and hand-rolled repository classes hold a fixed `EntityManager` and can't be silently intercepted. Extend the base class instead:
 
 ```ts
-import { TransactionalRepository, TransactionHost, TypeOrmAdapter } from '@nestjs-transactions/typeorm';
+import {
+  TransactionalRepository,
+  TransactionHost,
+  TypeOrmAdapter,
+} from '@nestjs-transactions/typeorm';
 
 @Injectable()
 export class MemberRepository extends TransactionalRepository<Member> {
@@ -199,25 +231,25 @@ const moduleRef = await Test.createTestingModule({
 
 ## Migrating from `typeorm-transactional`
 
-| | `typeorm-transactional` | `@nestjs-transactions/typeorm` |
-|---|---|---|
-| Bootstrap | `initializeTransactionalContext()` before everything | `TransactionalModule.forRoot()` in `AppModule` |
-| DataSource | `addTransactionalDataSource(ds)` | automatic (uses `@nestjs/typeorm` tokens) |
-| Repositories | `TypeOrmModule.forFeature([E])` | `TransactionalModule.forFeature([E])` |
-| Decorator | `@Transactional()` | `@Transactional()` (unchanged) |
-| Propagation | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` (same syntax) |
-| Isolation | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` (same syntax) |
-| Hooks | `runOnTransactionCommit/Rollback` | use database/app events or `withTransaction` wrappers |
-| Mechanism | monkey-patches `DataSource`/`Repository` prototypes | plain DI + CLS — nothing is patched |
+|              | `typeorm-transactional`                                           | `@nestjs-transactions/typeorm`                                                                            |
+| ------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Bootstrap    | `initializeTransactionalContext()` before everything              | `TransactionalModule.forRoot()` in `AppModule`                                                            |
+| DataSource   | `addTransactionalDataSource(ds)`                                  | automatic (uses `@nestjs/typeorm` tokens)                                                                 |
+| Repositories | `TypeOrmModule.forFeature([E])`                                   | `TransactionalModule.forFeature([E])`                                                                     |
+| Decorator    | `@Transactional()`                                                | `@Transactional()` (unchanged)                                                                            |
+| Propagation  | `@Transactional({ propagation: Propagation.REQUIRES_NEW })`       | `@Transactional({ propagation: Propagation.REQUIRES_NEW })` (same syntax)                                 |
+| Isolation    | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` | `@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })` (same syntax)                           |
+| Hooks        | `runOnTransactionCommit/Rollback/Complete`                        | `runOnTransactionCommit/Rollback/Complete` (same functions — see [Transaction hooks](#transaction-hooks)) |
+| Mechanism    | monkey-patches `DataSource`/`Repository` prototypes               | plain DI + CLS — nothing is patched                                                                       |
 
-Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, and update `Propagation`/`IsolationLevel` imports. Services keep `@InjectRepository` + `@Transactional({ ... })` unchanged — the decorator's options-object syntax is the same as `typeorm-transactional`'s.
+Steps: remove `initializeTransactionalContext()` and `addTransactionalDataSource()`, add `TransactionalModule.forRoot()`, swap `TypeOrmModule.forFeature` for `TransactionalModule.forFeature`, and update `Propagation`/`IsolationLevel`/hook imports. Services keep `@InjectRepository` + `@Transactional({ ... })` unchanged — the decorator's options-object syntax is the same as `typeorm-transactional`'s.
 
 ## Caveats
 
 - **Don't register the same entity with both** `TypeOrmModule.forFeature` and `TransactionalModule.forFeature` in the same module — they claim the same token; the last registration wins.
 - **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `RequiresNew` for genuine parallelism.
 - **`repo.extend()`** can't be intercepted — use `TransactionalRepository` (above).
-- If your app already uses `nestjs-cls` (`ClsModule.forRoot`), everything just works: this package only registers a CLS *plugin* and never calls `ClsModule.forRoot()` itself.
+- If your app already uses `nestjs-cls` (`ClsModule.forRoot`), everything just works: this package only registers a CLS _plugin_ and never calls `ClsModule.forRoot()` itself.
 
 ## License
 

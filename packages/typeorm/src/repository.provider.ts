@@ -29,14 +29,19 @@ export function provideTransactionAwareRepository(
       return createTransactionAwareProxy(() => {
         const manager = txHost.tx;
         if (isTree === undefined) {
-          // Optional chaining keeps mocked managers (testing module) working:
-          // no connection metadata means a plain getRepository lookup.
-          isTree =
-            (manager.connection?.hasMetadata?.(entity) &&
-              !!manager.connection.getMetadata(entity).treeType) ||
-            false;
+          const connection = manager.connection;
+          if (typeof connection?.hasMetadata !== 'function') {
+            // Mocked manager (testing module): plain getRepository lookup, decided once.
+            isTree = false;
+          } else if (connection.hasMetadata(entity)) {
+            isTree = !!connection.getMetadata(entity).treeType;
+          }
+          // Metadata not built yet (DataSource not initialized): leave undefined
+          // so the decision is retried on the next access instead of frozen wrong.
         }
-        const repository = isTree ? manager.getTreeRepository(entity) : manager.getRepository(entity);
+        const repository = isTree
+          ? manager.getTreeRepository(entity)
+          : manager.getRepository(entity);
         if (!repository) {
           throw new Error(
             `manager.getRepository() returned ${repository} for entity ${entityName(entity)} — ` +

@@ -3,12 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule, ClsService } from 'nestjs-cls';
 import { Repository } from 'typeorm';
-import {
-  Transactional,
-  TransactionalModule,
-  TransactionHost,
-  TypeOrmAdapter,
-} from '../../src';
+import { Transactional, TransactionalModule, TransactionHost, TypeOrmAdapter } from '../../src';
 import { TransactionalRepository } from '../../src/transactional.repository';
 import { Member, PG_A } from './fixtures';
 
