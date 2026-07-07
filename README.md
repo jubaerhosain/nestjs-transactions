@@ -10,7 +10,7 @@ export class MemberService {
   @Transactional()
   async transfer(from: string, to: string) {
     await this.repo.save(/* ... */); // silently runs on the transactional EntityManager
-    await this.accounting.record();  // same transaction, propagated through CLS
+    await this.accounting.record(); // same transaction, propagated through CLS
   }
 }
 ```
@@ -18,20 +18,20 @@ export class MemberService {
 ## Why
 
 - [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) has the ergonomics but is **abandoned** (last release Oct 2023) and works by monkey-patching TypeORM prototypes at boot.
-- [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) is actively maintained and correct — but requires injecting `TransactionHost` and writing `txHost.tx.getRepository(Entity)` everywhere; its docs state there is *no transactional support for working directly with repositories*.
+- [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) is actively maintained and correct — but requires injecting `TransactionHost` and writing `txHost.tx.getRepository(Entity)` everywhere; its docs state there is _no transactional support for working directly with repositories_.
 
 This project bridges the gap: **the DX of the former, built entirely on the latter.** Standard NestJS DI, no patching, no boilerplate.
 
 ## Packages
 
-| Package | Use it for |
-|---|---|
-| [`@nestjs-transactions/typeorm`](./packages/typeorm) | TypeORM — silent `@InjectRepository` repositories |
-| [`@nestjs-transactions/core`](./packages/core) | ORM-agnostic building blocks (installed automatically as a peer; you don't import from it) |
-| `@nestjs-transactions/prisma` | *planned* |
-| `@nestjs-transactions/drizzle` | *planned* |
+| Package                                              | Use it for                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [`@nestjs-transactions/typeorm`](./packages/typeorm) | TypeORM — silent `@InjectRepository` repositories                                          |
+| [`@nestjs-transactions/core`](./packages/core)       | ORM-agnostic building blocks (installed automatically as a peer; you don't import from it) |
+| `@nestjs-transactions/prisma`                        | _planned_                                                                                  |
+| `@nestjs-transactions/drizzle`                       | _planned_                                                                                  |
 
-Every adapter exposes the same surface — `TransactionalModule`, `Transactional`, `Propagation`, `TransactionHost` — from a single import.
+Every adapter exposes the same surface — `TransactionalModule`, `Transactional`, `Propagation`, `TransactionHost`, and the `runOnTransactionCommit`/`Rollback`/`Complete` lifecycle hooks — from a single import.
 
 ## Quick start (TypeORM)
 
@@ -45,10 +45,7 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 import { TransactionalModule } from '@nestjs-transactions/typeorm';
 
 @Module({
-  imports: [
-    TypeOrmModule.forRoot({ /* ... */ }),
-    TransactionalModule.forRoot(),
-  ],
+  imports: [TypeOrmModule.forRoot({/* ... */}), TransactionalModule.forRoot()],
 })
 export class AppModule {}
 

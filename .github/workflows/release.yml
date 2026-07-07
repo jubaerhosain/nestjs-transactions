@@ -24,6 +24,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Self-contained safety gate: fail before versioning/publishing even if
+      # something reached main without the required PR checks.
+      - run: pnpm -r build
+      - run: pnpm -r test:unit
       - uses: changesets/action@v1
         with:
           # pnpm (not npm/changesets) must publish: it rewrites workspace:^ at pack time

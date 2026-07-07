@@ -36,8 +36,7 @@ class AsyncOptionsTypeOrmAdapter extends TransactionalAdapterTypeOrm {
       // compiles of the same module — a conditional assignment would leak one
       // app's options into the next.
       this.defaultTxOptions = resolved?.defaultTxOptions as
-        | Partial<TypeOrmTransactionOptions>
-        | undefined;
+        Partial<TypeOrmTransactionOptions> | undefined;
       return original(dataSource);
     };
   }
@@ -49,13 +48,13 @@ const TransactionalModuleBase = createTransactionalModule<
 >({
   adapterFactory: (options) => ({
     adapter: new TransactionalAdapterTypeOrm({
-      dataSourceToken: getDataSourceToken(resolveConnection(options).dataSource),
+      dataSourceToken: getDataSourceToken(options.dataSource),
       defaultTxOptions: options.defaultTxOptions,
     }),
     imports: options.imports,
   }),
   asyncAdapterFactory: (options) => ({
-    adapter: new AsyncOptionsTypeOrmAdapter(getDataSourceToken(resolveConnection(options).dataSource)),
+    adapter: new AsyncOptionsTypeOrmAdapter(getDataSourceToken(options.dataSource)),
     providers: [
       {
         provide: ASYNC_OPTIONS_TOKEN,
@@ -95,12 +94,16 @@ export class TransactionalModule extends TransactionalModuleBase {
 }
 
 /**
- * Apply the bidirectional connectionName↔dataSource defaulting before the base
- * class registers the CLS plugin, so `forRoot({ dataSource: 'stats' })`
- * registers the NAMED connection 'stats' rather than the default one.
+ * Apply the bidirectional connectionName↔dataSource defaulting once, before the
+ * base class registers the CLS plugin, so `forRoot({ dataSource: 'stats' })`
+ * registers the NAMED connection 'stats' rather than the default one, and the
+ * adapter factories can read `options.dataSource` directly. (`getDataSourceToken`
+ * maps both `undefined` and the literal 'default' to the default token, so the
+ * un-normalized dataSource is safe to pass through.)
  */
-function withResolvedConnection<T extends TypeOrmTransactionalOptions | TypeOrmTransactionalAsyncOptions>(
-  options: T,
-): T {
-  return { ...options, connectionName: resolveConnection(options).connectionName };
+function withResolvedConnection<
+  T extends TypeOrmTransactionalOptions | TypeOrmTransactionalAsyncOptions,
+>(options: T): T {
+  const { connectionName, dataSource } = resolveConnection(options);
+  return { ...options, connectionName, dataSource };
 }

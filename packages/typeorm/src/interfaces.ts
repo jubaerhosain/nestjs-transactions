@@ -31,8 +31,7 @@ export interface TypeOrmTransactionalAsyncFactoryResult {
  * Async variant: `dataSource` (a DI token) and `connectionName` stay static;
  * the factory resolves `defaultTxOptions` at DI time (e.g. from ConfigService).
  */
-export interface TypeOrmTransactionalAsyncOptions
-  extends TransactionalAsyncOptionsBase<TypeOrmTransactionalAsyncFactoryResult> {
+export interface TypeOrmTransactionalAsyncOptions extends TransactionalAsyncOptionsBase<TypeOrmTransactionalAsyncFactoryResult> {
   dataSource?: DataSourceRef;
 }
 

@@ -66,7 +66,8 @@ pnpm -r test:int              # jest.integration.config.js, --runInBand
   (cross-package types resolve through built `dist`).
 - **`main` is protected** (branch ruleset). Work on a branch and open a PR.
   Required CI checks: `lint`, `typecheck`, `build-test` (Node 22 & 24), and
-  `integration`. See `.github/workflows/ci.yml`.
+  `integration`. The `lint` job also runs `pnpm format` (`prettier --check`).
+  See `.github/workflows/ci.yml`.
 - **Nightly dependency upgrades** (`.github/workflows/deps-upgrade.yml`): a
   scheduled job (03:00 UTC + manual `workflow_dispatch`) runs `pnpm update -r`
   (newest in-range versions, no major bumps — pnpm 11 also rewrites the caret
@@ -90,7 +91,8 @@ pnpm -r test:int              # jest.integration.config.js, --runInBand
 
 Uses [Changesets](https://github.com/changesets/changesets). For any user-facing
 change, add a changeset (`pnpm changeset`) in the same PR. The release workflow
-(`.github/workflows/release.yml`) versions and publishes via `ci:publish`.
+(`.github/workflows/release.yml`) builds and runs unit tests as its own safety
+gate, then versions and publishes via `ci:publish`.
 
 ## ⚠️ Keeping these CLAUDE.md files current
 

@@ -329,7 +329,9 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
   // Regression for the review finding: spies used to land on the fallback
   // repository only and were silently bypassed inside transactions.
   it('jest.spyOn on the injected repository is honored inside @Transactional()', async () => {
-    const spy = jest.spyOn(service.repo, 'save').mockResolvedValue({ id: 0, name: 'mock' } as Member);
+    const spy = jest
+      .spyOn(service.repo, 'save')
+      .mockResolvedValue({ id: 0, name: 'mock' } as Member);
 
     // Both services inject the same repository provider, so both saves inside
     // the transaction hit the spy — nothing reaches the database.

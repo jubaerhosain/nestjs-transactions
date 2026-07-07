@@ -17,6 +17,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint # eslint . — covers src + test/**/*.spec.ts
+      - run: pnpm format # prettier --check .
 
   typecheck:
     runs-on: ubuntu-latest

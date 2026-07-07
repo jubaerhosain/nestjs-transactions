@@ -42,8 +42,7 @@ export interface AdapterRegistration {
  * must be static because the CLS plugin is registered at module-definition time.
  */
 export interface TransactionalAsyncOptionsBase<TFactoryResult>
-  extends Pick<ModuleMetadata, 'imports'>,
-    TransactionalRootOptionsBase {
+  extends Pick<ModuleMetadata, 'imports'>, TransactionalRootOptionsBase {
   useFactory: (...args: any[]) => Promise<TFactoryResult> | TFactoryResult;
   inject?: InjectionToken[];
 }
