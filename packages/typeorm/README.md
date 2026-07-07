@@ -1,6 +1,6 @@
 # @nestjs-transactions/typeorm
 
-**Silent `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **nothing is rewritten at boot**. Inspired by a decorator-based approach many NestJS developers already know, but that is no longer maintained.
+**Silent `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. Inspired by a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 ## Install
 
@@ -64,7 +64,7 @@ If `register` throws, everything rolls back — including writes made in `Accoun
 
 ## How it works
 
-`forFeature([Member])` registers a provider under TypeORM's standard repository token — the exact token `@InjectRepository` resolves — whose value is a lazy proxy over `txHost.tx.getRepository(Member)`. `txHost.tx` is the transactional `EntityManager` inside `@Transactional()` and the regular one outside. Nothing is rewritten at boot; it is ordinary NestJS dependency injection.
+`forFeature([Member])` registers a provider under TypeORM's standard repository token — the exact token `@InjectRepository` resolves — whose value is a lazy proxy over `txHost.tx.getRepository(Member)`. `txHost.tx` is the transactional `EntityManager` inside `@Transactional()` and the regular one outside. No monkey-patching; it is ordinary NestJS dependency injection.
 
 ## Propagation
 
