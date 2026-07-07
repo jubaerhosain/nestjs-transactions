@@ -1,5 +1,15 @@
 # @nestjs-transactions/core
 
+## 0.4.1
+
+### Patch Changes
+
+- [#9](https://github.com/jubaerhosain/nestjs-transactions/pull/9) [`ea17645`](https://github.com/jubaerhosain/nestjs-transactions/commit/ea17645e29878dedd55556c06fcada49eb4dd768) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - Review fixes: document the transaction lifecycle hooks in the READMEs (the migration
+  table wrongly said hooks were unsupported), retry the tree-repository detection when
+  entity metadata is not yet available instead of freezing a wrong "plain" decision,
+  log hook failures with a proper stack trace, and ship the LICENSE file in the
+  published tarballs.
+
 ## 0.4.0
 
 ### Minor Changes
