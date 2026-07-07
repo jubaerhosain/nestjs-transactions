@@ -1,6 +1,6 @@
 # @nestjs-transactions/typeorm
 
-**Silent `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. A drop-in replacement DX for the abandoned [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional), built entirely on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — standard NestJS DI, **zero monkey-patching**.
+**Declarative `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. A drop-in replacement DX for the abandoned [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional), built entirely on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — standard NestJS DI, **zero monkey-patching**.
 
 ## Install
 
