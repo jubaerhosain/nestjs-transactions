@@ -15,6 +15,7 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 
 ```ts
 // app.module.ts
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { TransactionalModule } from '@nestjs-transactions/typeorm';
 
 @Module({
@@ -22,6 +23,13 @@ import { TransactionalModule } from '@nestjs-transactions/typeorm';
 })
 export class AppModule {}
 ```
+
+Both root imports are required and do different jobs:
+
+- **`TypeOrmModule.forRoot()`** (from `@nestjs/typeorm`) owns the **database connection** — the `DataSource`, pool, and entity metadata. Standard NestJS + TypeORM; nothing here is specific to this package.
+- **`TransactionalModule.forRoot()`** owns **transaction propagation** — it registers the `@nestjs-cls/transactional` CLS plugin that powers `@Transactional()` (starting/committing/rolling back transactions and swapping the active `EntityManager`). It does **not** create a connection; it resolves the `DataSource` that `TypeOrmModule` registered.
+
+Neither replaces the other: with only `TypeOrmModule`, `@Transactional()` does nothing; with only `TransactionalModule`, there is no `DataSource` to run transactions against. Register both once at the app root — this mirrors `typeorm-transactional`'s bootstrap, minus the monkey-patching (see [Migrating](#migrating-from-typeorm-transactional)).
 
 ```ts
 // member.module.ts — use INSTEAD of TypeOrmModule.forFeature([Member])
