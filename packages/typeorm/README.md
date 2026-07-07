@@ -178,7 +178,7 @@ For a named connection inject with `@InjectTransactionHost('stats')`.
 
 ## Custom repositories
 
-`repo.extend()` and hand-rolled repository classes hold a fixed `EntityManager` and can't be silently intercepted. Extend the base class instead:
+`repo.extend()` and hand-rolled repository classes hold a fixed `EntityManager` and can't be intercepted. Extend the base class instead:
 
 ```ts
 import {

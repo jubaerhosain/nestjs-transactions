@@ -4,7 +4,7 @@ ORM-agnostic building blocks for the `@nestjs-transactions` adapter family, buil
 
 **You don't import from this package directly** — install it as a peer of an adapter and import everything from there:
 
-- [`@nestjs-transactions/typeorm`](https://www.npmjs.com/package/@nestjs-transactions/typeorm) — silent `@InjectRepository` repositories for TypeORM
+- [`@nestjs-transactions/typeorm`](https://www.npmjs.com/package/@nestjs-transactions/typeorm) — transaction-aware `@InjectRepository` repositories for TypeORM
 
 ## What it provides
 
