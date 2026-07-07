@@ -11,42 +11,6 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 
 (All are peer dependencies — this package ships zero runtime dependencies.)
 
-## Pros & cons vs `typeorm-transactional`
-
-### Pros
-
-- **No monkey-patching.** `typeorm-transactional` patches the `DataSource` and
-  `Repository` prototypes globally; here it's plain NestJS DI + CLS, so nothing
-  is mutated at runtime.
-- **Actively maintained foundation.** Built on `@nestjs-cls/transactional`,
-  which is actively maintained; `typeorm-transactional` is effectively
-  abandoned.
-- **No bootstrap-ordering footgun.** No `initializeTransactionalContext()` that
-  must run before any import — wiring is declarative NestJS modules
-  (`TransactionalModule.forRoot()`).
-- **Automatic DataSource wiring.** Resolves the `@nestjs/typeorm` DataSource
-  tokens; no `addTransactionalDataSource()` call to remember.
-- **Type-safe isolation levels** via the `IsolationLevel` enum, kept in sync
-  with TypeORM's literals at compile time.
-- **Zero runtime dependencies** (everything is a peer dep), and it composes
-  cleanly with an existing `nestjs-cls` setup.
-
-### Cons
-
-- **More to install:** five peer dependencies vs `typeorm-transactional`'s
-  single package.
-- **A module swap:** replace `TypeOrmModule.forFeature([E])` with
-  `TransactionalModule.forFeature([E])`; `typeorm-transactional` lets you keep
-  `TypeOrmModule.forFeature` untouched.
-- **Younger and less battle-tested,** with a smaller community than
-  `typeorm-transactional`'s large install base.
-- **Custom repositories aren't auto-intercepted:** `repo.extend()` and
-  hand-rolled repository classes need the `TransactionalRepository` base class
-  (a limitation `typeorm-transactional` shares, but worth knowing up front).
-
-See [Migrating from `typeorm-transactional`](#migrating-from-typeorm-transactional)
-for the step-by-step API mapping and [Caveats](#caveats) for the full list.
-
 ## Quick start
 
 ```ts
@@ -272,6 +236,19 @@ const moduleRef = await Test.createTestingModule({
 ```
 
 `@Transactional()` methods run without real transactions and `@InjectRepository(Member)` resolves to your mock.
+
+## Pros & cons vs `typeorm-transactional`
+
+Honest tradeoffs of choosing this package over the incumbent. See [Migrating](#migrating-from-typeorm-transactional) below for the step-by-step API mapping and [Caveats](#caveats) for the full list.
+
+| ✅ Pros                                                                                                                        | ⚠️ Cons                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| **No monkey-patching** — plain NestJS DI + CLS; `typeorm-transactional` patches `DataSource`/`Repository` prototypes globally. | **More to install** — five peer dependencies vs `typeorm-transactional`'s single package.                                   |
+| **Actively maintained foundation** — built on `@nestjs-cls/transactional`; `typeorm-transactional` is effectively abandoned.   | **A module swap** — replace `TypeOrmModule.forFeature([E])` with `TransactionalModule.forFeature([E])`.                     |
+| **No bootstrap-ordering footgun** — no `initializeTransactionalContext()` that must run before any import.                     | **Younger, less battle-tested** — smaller community than `typeorm-transactional`'s large install base.                      |
+| **Automatic DataSource wiring** — no `addTransactionalDataSource()`; uses `@nestjs/typeorm` tokens.                            | **Custom repos aren't auto-intercepted** — `repo.extend()`/hand-rolled repos need the `TransactionalRepository` base class. |
+| **Type-safe isolation levels** — `IsolationLevel` enum kept in sync with TypeORM at compile time.                              |                                                                                                                             |
+| **Zero runtime dependencies** — everything is a peer dep; composes cleanly with an existing `nestjs-cls` setup.                |                                                                                                                             |
 
 ## Migrating from `typeorm-transactional`
 
