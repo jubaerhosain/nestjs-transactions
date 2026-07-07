@@ -1,0 +1,27 @@
+// Integration-test schema only — nothing here ships with the package.
+// `prisma-client-js` (not the Prisma 7 `prisma-client` generator) keeps the
+// generated client CJS-compatible with this repo's node16/CommonJS setup.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Author {
+  id      Int     @id @default(autoincrement())
+  name    String
+  entries Entry[]
+
+  @@map("prisma_authors")
+}
+
+model Entry {
+  id       Int    @id @default(autoincrement())
+  title    String
+  author   Author @relation(fields: [authorId], references: [id])
+  authorId Int
+
+  @@map("prisma_entries")
+}

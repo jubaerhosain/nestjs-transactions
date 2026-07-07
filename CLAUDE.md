@@ -1,7 +1,8 @@
 # CLAUDE.md
 
 Guidance for working in this repository. Package-specific notes live in
-`packages/core/CLAUDE.md` and `packages/typeorm/CLAUDE.md`.
+`packages/core/CLAUDE.md`, `packages/typeorm/CLAUDE.md` and
+`packages/prisma/CLAUDE.md`.
 
 ## Overview
 
@@ -20,6 +21,7 @@ pnpm workspace (`pnpm-workspace.yaml` → `packages/*`).
 | ------------------------------ | ------------------ | -------------------------------------------------------------------------------------- |
 | `@nestjs-transactions/core`    | `packages/core`    | ORM-agnostic building blocks + adapter-author SPI. Not imported directly by end users. |
 | `@nestjs-transactions/typeorm` | `packages/typeorm` | The TypeORM adapter — the package end users install.                                   |
+| `@nestjs-transactions/prisma`  | `packages/prisma`  | The Prisma adapter (prototype) — an end-user package.                                  |
 
 **Single symbol identity:** `core` re-exports the canonical decorators, tokens,
 and error classes from `@nestjs-cls/transactional`, and every adapter re-exports
@@ -28,8 +30,9 @@ so `@Transactional`, `TransactionHost`, `Propagation`, etc. share one identity
 across all packages. **One deliberate exception:** the `typeorm` adapter wraps
 `@nestjs-cls`'s `Transactional` in its own object-form facade (a single-object
 API that resolves the positional-argument ambiguity); see
-`packages/typeorm/CLAUDE.md`. All other symbols — including core's own
-`Transactional` — remain plain re-exports.
+`packages/typeorm/CLAUDE.md`. The `prisma` adapter follows the same facade
+pattern. All other symbols — including core's own `Transactional` — remain
+plain re-exports.
 
 ## Commands
 
@@ -43,7 +46,7 @@ Run from the repo root unless noted. `-r` = across all workspace packages.
 | `pnpm typecheck`    | `tsc --noEmit -p tsconfig.json` per package. Type-checks **tests too** (jest runs use `isolatedModules` and skip full type-checking). Requires a prior `pnpm -r build` (typeorm resolves `@nestjs-transactions/core` via its built `dist/*.d.ts`). |
 | `pnpm format`       | `prettier --check .`.                                                                                                                                                                                                                              |
 | `pnpm -r test:unit` | Jest unit tests (`test/unit/**` + `src/**/*.spec.ts`).                                                                                                                                                                                             |
-| `pnpm -r test:int`  | Integration tests (typeorm only). Needs Postgres — see below.                                                                                                                                                                                      |
+| `pnpm -r test:int`  | Integration tests (typeorm + prisma). Needs Postgres — see below.                                                                                                                                                                                  |
 | `pnpm changeset`    | Record a changeset for a user-facing change.                                                                                                                                                                                                       |
 | `pnpm ci:publish`   | Build + publish (used by release CI).                                                                                                                                                                                                              |
 
@@ -56,6 +59,10 @@ docker compose up -d --wait   # ports 54321 (PG_A_PORT) / 54322 (PG_B_PORT)
 pnpm -r test:int              # jest.integration.config.js, --runInBand
 ```
 
+typeorm uses both containers; prisma uses postgres-a only, inside a dedicated
+`prisma` Postgres schema (its `test:int` runs `prisma db push` itself), so the
+two suites never touch each other's tables.
+
 ## Gotchas & conventions
 
 - **Node version split:** published packages support Node **>=20** (`engines`),
@@ -64,6 +71,11 @@ pnpm -r test:int              # jest.integration.config.js, --runInBand
   intentionally different.
 - **`typecheck` depends on `build`:** run `pnpm -r build` before `pnpm typecheck`
   (cross-package types resolve through built `dist`).
+- **Prisma build scripts are allowlisted** in `pnpm-workspace.yaml`
+  (`allowBuilds`: `prisma`, `@prisma/engines`) — pnpm 11 blocks dependency
+  postinstall scripts by default. The prisma package's `typecheck`/`test:int`
+  scripts chain `prisma generate`/`db push` themselves (its integration tests
+  import the generated client; `src/` never does, so `build` needs no generate).
 - **`main` is protected** (branch ruleset). Work on a branch and open a PR.
   Required CI checks: `lint`, `typecheck`, `build-test` (Node 22 & 24), and
   `integration`. The `lint` job also runs `pnpm format` (`prettier --check`).
