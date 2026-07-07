@@ -1,6 +1,6 @@
 # @nestjs-transactions/typeorm
 
-**Declarative `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. Inspired by a decorator-based approach many NestJS developers already know, but that is no longer maintained.
+**Declarative `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. Inspired by [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) — a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 ## Install
 
@@ -236,7 +236,7 @@ const moduleRef = await Test.createTestingModule({
 
 `@Transactional()` methods run without real transactions and `@InjectRepository(Member)` resolves to your mock.
 
-## Coming from a decorator-based transaction library?
+## Coming from `typeorm-transactional`?
 
 If you're used to marking methods `@Transactional()` and letting your repositories run inside the transaction, the setup here is deliberately small:
 

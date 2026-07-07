@@ -21,7 +21,7 @@ Transaction management shouldn't leak into your code. You keep your `@InjectRepo
 
 - **Invisible propagation.** Transactions flow through CLS (`AsyncLocalStorage`), so a call several services deep joins the same transaction and rolls back together.
 - **Plain dependency injection.** It's built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — TypeORM's classes are never patched at startup, so a library upgrade can't silently break you.
-- **Familiar ergonomics.** Inspired by a decorator-based approach many NestJS developers already know, but that is no longer maintained.
+- **Familiar ergonomics.** Inspired by [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) — a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 ## Packages
 
