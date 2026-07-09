@@ -1,7 +1,7 @@
 {
   "name": "@nestjs-transactions/core",
-  "version": "0.4.1",
-  "description": "ORM-agnostic building blocks for silent transaction propagation in NestJS, built on @nestjs-cls/transactional",
+  "version": "0.4.2",
+  "description": "ORM-agnostic building blocks for declarative transaction propagation in NestJS, built on @nestjs-cls/transactional",
   "license": "MIT",
   "author": "Jubaer Hosain",
   "repository": {
@@ -62,9 +62,9 @@
   },
   "devDependencies": {
     "@nestjs-cls/transactional": "^3.2.1",
-    "@nestjs/common": "^11.1.27",
-    "@nestjs/core": "^11.1.27",
-    "@nestjs/testing": "^11.1.27",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/testing": "^11.1.28",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.13.2",
     "jest": "^29.7.0",

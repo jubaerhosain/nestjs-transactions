@@ -1,6 +1,6 @@
 # nestjs-transactions
 
-**Silent transaction propagation for NestJS with vanilla ergonomics.** Keep `@InjectRepository(Entity)`, add `@Transactional()`, done — transactions propagate through CLS (`AsyncLocalStorage`), across services, with zero monkey-patching.
+**Declarative transaction propagation for NestJS with vanilla ergonomics.** Keep `@InjectRepository(Entity)`, add `@Transactional()`, done — transactions propagate through CLS (`AsyncLocalStorage`), across services, with zero monkey-patching.
 
 ```ts
 @Injectable()
@@ -9,7 +9,7 @@ export class MemberService {
 
   @Transactional()
   async transfer(from: string, to: string) {
-    await this.repo.save(/* ... */); // silently runs on the transactional EntityManager
+    await this.repo.save(/* ... */); // runs on the active transactional EntityManager
     await this.accounting.record(); // same transaction, propagated through CLS
   }
 }
@@ -17,19 +17,18 @@ export class MemberService {
 
 ## Why
 
-- [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) has the ergonomics but is **abandoned** (last release Oct 2023) and works by monkey-patching TypeORM prototypes at boot.
-- [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) is actively maintained and correct — but requires injecting `TransactionHost` and writing `txHost.tx.getRepository(Entity)` everywhere; its docs state there is _no transactional support for working directly with repositories_.
+Transaction management shouldn't leak into your code. You keep your `@InjectRepository(Entity)` repositories, add `@Transactional()` to a method, and the repository quietly runs on the active transaction — no `EntityManager` or `queryRunner` threaded through your services, no boilerplate.
 
-This project bridges the gap: **the DX of the former, built entirely on the latter.** Standard NestJS DI, no patching, no boilerplate.
+- **Invisible propagation.** Transactions flow through CLS (`AsyncLocalStorage`), so a call several services deep joins the same transaction and rolls back together.
+- **Plain dependency injection.** It's built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) — TypeORM's classes are never patched at startup, so a library upgrade can't break you unexpectedly.
+- **Familiar ergonomics.** Inspired by [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) — a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 ## Packages
 
 | Package                                              | Use it for                                                                                 |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [`@nestjs-transactions/typeorm`](./packages/typeorm) | TypeORM — silent `@InjectRepository` repositories                                          |
+| [`@nestjs-transactions/typeorm`](./packages/typeorm) | TypeORM — transaction-aware `@InjectRepository` repositories                               |
 | [`@nestjs-transactions/core`](./packages/core)       | ORM-agnostic building blocks (installed automatically as a peer; you don't import from it) |
-| `@nestjs-transactions/prisma`                        | _planned_                                                                                  |
-| `@nestjs-transactions/drizzle`                       | _planned_                                                                                  |
 
 Every adapter exposes the same surface — `TransactionalModule`, `Transactional`, `Propagation`, `TransactionHost`, and the `runOnTransactionCommit`/`Rollback`/`Complete` lifecycle hooks — from a single import.
 
@@ -57,7 +56,7 @@ export class AppModule {}
 export class MemberModule {}
 ```
 
-That's the whole setup. See the [`@nestjs-transactions/typeorm` README](./packages/typeorm/README.md) for propagation modes, multiple data sources, custom repositories, testing utilities, and the migration guide from `typeorm-transactional`.
+That's the whole setup. See the [`@nestjs-transactions/typeorm` README](./packages/typeorm/README.md) for propagation modes, multiple data sources, custom repositories, and testing utilities.
 
 ## Development
 

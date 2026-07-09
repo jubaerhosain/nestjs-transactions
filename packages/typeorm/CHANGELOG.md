@@ -1,5 +1,21 @@
 # @nestjs-transactions/typeorm
 
+## 4.0.4
+
+### Patch Changes
+
+- [#19](https://github.com/jubaerhosain/nestjs-transactions/pull/19) [`2b49b23`](https://github.com/jubaerhosain/nestjs-transactions/commit/2b49b2344c010e90e3d6f12361fe33a2b162e9a4) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - docs: refresh package READMEs — benefits-first framing, reference `typeorm-transactional` as the inspiration, and replace "silent" wording with "declarative" / "transaction-aware". Publishes the updated README to the npm registry (npm only refreshes the README on a new version).
+
+- Updated dependencies [[`2b49b23`](https://github.com/jubaerhosain/nestjs-transactions/commit/2b49b2344c010e90e3d6f12361fe33a2b162e9a4)]:
+  - @nestjs-transactions/core@0.4.2
+
+## 4.0.3
+
+### Patch Changes
+
+- [#14](https://github.com/jubaerhosain/nestjs-transactions/pull/14) [`ec3900b`](https://github.com/jubaerhosain/nestjs-transactions/commit/ec3900bd266c2ac221e271c367b37810960c1172) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - docs: add an up-front Pros & Cons section comparing `@nestjs-transactions/typeorm`
+  with `typeorm-transactional`, so readers can weigh the tradeoffs before install.
+
 ## 4.0.2
 
 ### Patch Changes

@@ -5,8 +5,8 @@ See the [root `CLAUDE.md`](../../CLAUDE.md) for repo-wide commands and conventio
 ## Purpose
 
 The TypeORM adapter — the package end users install. Keep
-`@InjectRepository(Entity)`, add `@Transactional()`, and repositories silently
-run on the active transactional `EntityManager` (propagated via CLS). No
+`@InjectRepository(Entity)`, add `@Transactional()`, and repositories run on
+the active transactional `EntityManager` (propagated via CLS). No
 monkey-patching; built on `@nestjs-transactions/core` +
 `@nestjs-cls/transactional-adapter-typeorm`.
 

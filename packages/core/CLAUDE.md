@@ -4,7 +4,7 @@ See the [root `CLAUDE.md`](../../CLAUDE.md) for repo-wide commands and conventio
 
 ## Purpose
 
-ORM-agnostic building blocks for silent transaction propagation, built on
+ORM-agnostic building blocks for declarative transaction propagation, built on
 `@nestjs-cls/transactional`. **End users do not import from this package
 directly** — it's a peer that adapter packages (e.g. `@nestjs-transactions/typeorm`)
 build on and re-export from.
@@ -45,7 +45,7 @@ What an adapter package consumes from here:
 - `createTransactionalModule` — `src/create-transactional-module.ts`. Base for an
   adapter's `TransactionalModule` (`forRoot`/`forRootAsync`/`forFeature`).
 - `createTransactionAwareProxy` — `src/transaction-aware-proxy.ts`. Makes a
-  repository/manager silently resolve to the active transactional instance.
+  repository/manager resolve to the active transactional instance.
 - Interfaces — `src/interfaces.ts` (`AdapterRegistration`,
   `TransactionalRootOptionsBase`, `TransactionalAsyncOptionsBase`,
   `TransactionalModuleDefinition`).
