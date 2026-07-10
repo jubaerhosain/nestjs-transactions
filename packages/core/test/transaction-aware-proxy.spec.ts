@@ -117,5 +117,46 @@ describe('createTransactionAwareProxy', () => {
       expect(Object.keys(proxy)).toEqual(expect.arrayContaining(['label', 'rows', 'extra']));
       expect('label' in proxy).toBe(true);
     });
+
+    it('honors an accessor (getter) installed via defineProperty', () => {
+      const repo = new Repo('r');
+      const proxy = createTransactionAwareProxy(() => repo) as Repo & { computed: string };
+
+      let calls = 0;
+      Object.defineProperty(proxy, 'computed', {
+        get() {
+          calls += 1;
+          return `computed-${calls}`;
+        },
+        configurable: true,
+      });
+
+      expect(proxy.computed).toBe('computed-1');
+      expect(proxy.computed).toBe('computed-2'); // getter runs on each access
+    });
+  });
+
+  describe('edge cases', () => {
+    it('is not thenable when the resolved target has no then', () => {
+      const proxy = createTransactionAwareProxy<Record<string, unknown>>(() => ({ a: 1 }));
+      expect((proxy as { then?: unknown }).then).toBeUndefined();
+    });
+
+    it('resolves to the proxy itself when awaited (non-thenable target)', async () => {
+      const proxy = createTransactionAwareProxy<Record<string, unknown>>(() => ({ a: 1 }));
+      await expect(Promise.resolve(proxy)).resolves.toBe(proxy);
+    });
+
+    it('reflects symbol-keyed properties from the resolved target', () => {
+      const tag = Symbol('tag');
+      const target = { [tag]: 'symbol-value' };
+      const proxy = createTransactionAwareProxy<Record<string | symbol, unknown>>(() => target);
+      expect(proxy[tag]).toBe('symbol-value');
+    });
+
+    it('names null in the descriptive error when resolve returns null', () => {
+      const proxy = createTransactionAwareProxy<Repo>(() => null as unknown as Repo);
+      expect(() => proxy.label).toThrow(/returned null/);
+    });
   });
 });

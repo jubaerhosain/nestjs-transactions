@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import {
+  InjectTransaction,
   InjectTransactionHost,
   Transactional,
   TransactionalAdapter,
@@ -8,7 +9,7 @@ import {
 } from '@nestjs-cls/transactional';
 import { Propagation } from '../src';
 import { createTransactionalModule } from '../src/create-transactional-module';
-import { TransactionalRootOptionsBase } from '../src/interfaces';
+import { TransactionalAsyncOptionsBase, TransactionalRootOptionsBase } from '../src/interfaces';
 
 interface FakeTx {
   id: number;
@@ -131,5 +132,121 @@ describe('createTransactionalModule', () => {
     expect(() => TransactionalModule.forRootAsync({ useFactory: () => ({}) })).toThrow(
       /forRootAsync\(\) is not supported/,
     );
+  });
+});
+
+describe('createTransactionalModule — adapter-contributed providers/exports', () => {
+  const WIRED = 'WIRED_TOKEN';
+
+  const ModuleWithProviders = createTransactionalModule<TransactionalRootOptionsBase>({
+    adapterFactory: () => ({
+      adapter: new FakeAdapter(),
+      providers: [{ provide: WIRED, useValue: 'wired-value' }],
+      exports: [WIRED],
+    }),
+  });
+
+  @Injectable()
+  class Consumer {
+    constructor(@Inject(WIRED) readonly wired: string) {}
+  }
+
+  it('exposes providers the adapter registration contributes (and exports them)', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [ModuleWithProviders.forRoot()],
+      providers: [Consumer],
+    }).compile();
+
+    // This is exactly how adapters expose their injected client/repository token.
+    expect(moduleRef.get(Consumer).wired).toBe('wired-value');
+    await moduleRef.close();
+  });
+});
+
+describe('createTransactionalModule — enableTransactionProxy', () => {
+  const ProxyModule = createTransactionalModule<TransactionalRootOptionsBase>({
+    adapterFactory: () => ({ adapter: new FakeAdapter() }),
+  });
+
+  @Injectable()
+  class ProxyService {
+    constructor(@InjectTransaction() readonly tx: FakeTx) {}
+
+    // Read the proxied transaction INSIDE the method — outside it the proxy
+    // resolves to the adapter's fallback instance.
+    @Transactional()
+    async idInTx(): Promise<number> {
+      return this.tx.id;
+    }
+
+    idOutsideTx(): number {
+      return this.tx.id;
+    }
+  }
+
+  it('wires @InjectTransaction() so the injected transaction resolves inside a tx', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [ProxyModule.forRoot({ enableTransactionProxy: true })],
+      providers: [ProxyService],
+    }).compile();
+    const service = moduleRef.get(ProxyService);
+
+    expect(await service.idInTx()).toBeGreaterThan(0); // an active transaction
+    expect(service.idOutsideTx()).toBe(0); // falls back outside one
+    await moduleRef.close();
+  });
+
+  it('does not register @InjectTransaction() when enableTransactionProxy is off', async () => {
+    // Without the flag the transaction proxy provider is absent, so a service
+    // that depends on @InjectTransaction() cannot be constructed.
+    await expect(
+      Test.createTestingModule({
+        imports: [ProxyModule.forRoot()],
+        providers: [ProxyService],
+      }).compile(),
+    ).rejects.toThrow();
+  });
+});
+
+describe('createTransactionalModule — forRootAsync happy path', () => {
+  const ASYNC_RESULT = 'ASYNC_RESULT';
+  const CONFIG = 'CONFIG';
+
+  @Module({ providers: [{ provide: CONFIG, useValue: 99 }], exports: [CONFIG] })
+  class ConfigModule {}
+
+  const AsyncModule = createTransactionalModule<
+    TransactionalRootOptionsBase,
+    TransactionalAsyncOptionsBase<{ value: number }>
+  >({
+    adapterFactory: () => ({ adapter: new FakeAdapter() }),
+    asyncAdapterFactory: (options) => ({
+      adapter: new FakeAdapter(),
+      providers: [
+        { provide: ASYNC_RESULT, useFactory: options.useFactory, inject: options.inject },
+      ],
+      exports: [ASYNC_RESULT],
+    }),
+  });
+
+  @Injectable()
+  class AsyncConsumer {
+    constructor(@Inject(ASYNC_RESULT) readonly result: { value: number }) {}
+  }
+
+  it('runs the async factory and threads options.imports so injected deps resolve', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        AsyncModule.forRootAsync({
+          imports: [ConfigModule], // must be threaded into the plugin module…
+          inject: [CONFIG], // …for this injection to resolve
+          useFactory: (value: number) => ({ value: value * 2 }),
+        }),
+      ],
+      providers: [AsyncConsumer],
+    }).compile();
+
+    expect(moduleRef.get(AsyncConsumer).result).toEqual({ value: 198 });
+    await moduleRef.close();
   });
 });
