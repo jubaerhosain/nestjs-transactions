@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { runOnTransactionCommit, runOnTransactionRollback } from '@nestjs-transactions/core';
+import {
+  runOnTransactionComplete,
+  runOnTransactionCommit,
+  runOnTransactionRollback,
+} from '@nestjs-transactions/core';
 import { InjectPrismaClient } from '../../src/prisma-client.provider';
 import { Transactional } from '../../src/transactional';
 import { createNoOpPrismaTransactionalModule } from '../../src/testing';
@@ -66,6 +70,74 @@ describe('createNoOpPrismaTransactionalModule', () => {
 
     await expect(moduleRef.get(FailingService).explode()).rejects.toThrow('boom');
     expect(rollbacks).toEqual(['boom']);
+  });
+
+  it('fires runOnTransactionComplete(undefined) on success in the no-op module', async () => {
+    const completed: Array<Error | undefined> = [];
+
+    @Injectable()
+    class CompleteService {
+      @Transactional()
+      async run(): Promise<void> {
+        runOnTransactionComplete((error) => {
+          completed.push(error);
+        });
+      }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [createNoOpPrismaTransactionalModule()],
+      providers: [CompleteService],
+    }).compile();
+
+    await moduleRef.get(CompleteService).run();
+    expect(completed).toEqual([undefined]);
+  });
+
+  it('normalizes a non-Error throw to an Error for the rollback hook', async () => {
+    const rollbacks: unknown[] = [];
+
+    @Injectable()
+    class NonErrorService {
+      @Transactional()
+      async explode(): Promise<void> {
+        runOnTransactionRollback((error) => {
+          rollbacks.push(error);
+        });
+        throw 'plain string failure';
+      }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [createNoOpPrismaTransactionalModule()],
+      providers: [NonErrorService],
+    }).compile();
+
+    await expect(moduleRef.get(NonErrorService).explode()).rejects.toBe('plain string failure');
+    expect(rollbacks).toHaveLength(1);
+    expect(rollbacks[0]).toBeInstanceOf(Error);
+    expect((rollbacks[0] as Error).message).toBe('plain string failure');
+  });
+
+  it("treats connectionName 'default' as the default connection", async () => {
+    const client = { author: { create: jest.fn().mockResolvedValue({ id: 1 }) } };
+
+    @Injectable()
+    class DefaultNamedService {
+      constructor(@InjectPrismaClient('default') private readonly prisma: any) {}
+
+      @Transactional({ connectionName: 'default' })
+      async create(name: string): Promise<{ id: number }> {
+        return this.prisma.author.create({ data: { name } });
+      }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [createNoOpPrismaTransactionalModule({ client, connectionName: 'default' })],
+      providers: [DefaultNamedService],
+    }).compile();
+
+    await expect(moduleRef.get(DefaultNamedService).create('ada')).resolves.toEqual({ id: 1 });
   });
 
   it('supports a named connection end to end', async () => {

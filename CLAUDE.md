@@ -21,7 +21,7 @@ pnpm workspace (`pnpm-workspace.yaml` → `packages/*`).
 | ------------------------------ | ------------------ | -------------------------------------------------------------------------------------- |
 | `@nestjs-transactions/core`    | `packages/core`    | ORM-agnostic building blocks + adapter-author SPI. Not imported directly by end users. |
 | `@nestjs-transactions/typeorm` | `packages/typeorm` | The TypeORM adapter — the package end users install.                                   |
-| `@nestjs-transactions/prisma`  | `packages/prisma`  | The Prisma adapter (prototype) — an end-user package.                                  |
+| `@nestjs-transactions/prisma`  | `packages/prisma`  | The Prisma adapter — the package end users install.                                    |
 
 **Single symbol identity:** `core` re-exports the canonical decorators, tokens,
 and error classes from `@nestjs-cls/transactional`, and every adapter re-exports

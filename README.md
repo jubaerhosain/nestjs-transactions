@@ -28,6 +28,7 @@ Transaction management shouldn't leak into your code. You keep your `@InjectRepo
 | Package                                              | Use it for                                                                                 |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | [`@nestjs-transactions/typeorm`](./packages/typeorm) | TypeORM — transaction-aware `@InjectRepository` repositories                               |
+| [`@nestjs-transactions/prisma`](./packages/prisma)   | Prisma — one transaction-aware client via `@InjectPrismaClient`                            |
 | [`@nestjs-transactions/core`](./packages/core)       | ORM-agnostic building blocks (installed automatically as a peer; you don't import from it) |
 
 Every adapter exposes the same surface — `TransactionalModule`, `Transactional`, `Propagation`, `TransactionHost`, and the `runOnTransactionCommit`/`Rollback`/`Complete` lifecycle hooks — from a single import.

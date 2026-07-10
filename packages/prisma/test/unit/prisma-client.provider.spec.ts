@@ -92,4 +92,29 @@ describe('provideTransactionAwarePrismaClient', () => {
     delete (proxy as any).author;
     expect(proxy.author).toBe('tx-author');
   });
+
+  it('is not accidentally thenable when the resolved client has no then', () => {
+    // A PrismaClient has no `then`; awaiting the injected proxy must not stall or
+    // misbehave. The proxy delegates `.then` to the target, which is undefined.
+    const proxy = buildProxy({ tx: { author: {} } as any });
+    expect((proxy as any).then).toBeUndefined();
+  });
+
+  it('resolves to the proxy itself when awaited (non-thenable target)', async () => {
+    const client = { marker: 'tx' };
+    const proxy = buildProxy({ tx: client as any });
+    await expect(Promise.resolve(proxy)).resolves.toBe(proxy);
+  });
+
+  it('propagates a rejection thrown by the delegate method', async () => {
+    const create = jest.fn().mockRejectedValue(new Error('db fail'));
+    const proxy = buildProxy({ tx: { author: { create } } });
+
+    await expect(proxy.author.create({ data: {} })).rejects.toThrow('db fail');
+  });
+
+  it('returns undefined for a property absent on the resolved client', () => {
+    const proxy = buildProxy({ tx: { author: {} } as any });
+    expect(proxy.doesNotExist).toBeUndefined();
+  });
 });

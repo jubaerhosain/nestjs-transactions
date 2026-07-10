@@ -69,4 +69,17 @@ describe('@Transactional facade — option → positional mapping', () => {
     Transactional(options);
     expect(options).toEqual(snapshot);
   });
+
+  // The whole reason the facade always passes a 3rd positional arg: a connection
+  // literally named like a propagation value must be forwarded as the connection
+  // name, never misread as a propagation mode. This is the file's raison d'être.
+  it('a connectionName colliding with a propagation literal is passed as the connection', () => {
+    Transactional({ connectionName: 'REQUIRED' });
+    expect(delegate).toHaveBeenCalledWith('REQUIRED', undefined, {});
+  });
+
+  it('a connectionName of "NESTED" (another propagation literal) is still the connection', () => {
+    Transactional({ connectionName: 'NESTED', timeout: 1_000 });
+    expect(delegate).toHaveBeenCalledWith('NESTED', undefined, { timeout: 1_000 });
+  });
 });

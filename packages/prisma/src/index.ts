@@ -25,6 +25,10 @@ export {
 export { Transactional } from './transactional';
 export type { TransactionalOptions } from './transactional';
 
+// Prisma transaction isolation levels as an ergonomic enum (kept in sync with
+// Prisma's own literals by a compile-time guard in the tests — see the file).
+export { IsolationLevel } from './isolation-level';
+
 // The module: forRoot / forRootAsync
 export { TransactionalModule } from './transactional.module';
 export type {

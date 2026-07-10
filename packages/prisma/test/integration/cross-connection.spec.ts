@@ -39,6 +39,21 @@ class CrossConnectionService {
     await this.writeOnSecondary(`${name}-secondary`);
     throw new Error('default-boom');
   }
+
+  @Transactional()
+  async defaultOnly(name: string, delayMs: number, fail = false): Promise<void> {
+    await this.prisma.author.create({ data: { name } });
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    if (fail) {
+      throw new Error('default-only-boom');
+    }
+  }
+
+  @Transactional({ connectionName: 'secondary' })
+  async secondaryOnly(name: string, delayMs: number): Promise<void> {
+    await this.secondary.author.create({ data: { name } });
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
 }
 
 describe('cross-connection independence (integration)', () => {
@@ -88,5 +103,18 @@ describe('cross-connection independence (integration)', () => {
     expect(events).toContain('commit:secondary:ada-secondary');
     expect(events).toContain('rollback:default:default-boom');
     expect(events).not.toContain('rollback:secondary');
+  });
+
+  it('runs a default and a named transaction concurrently, each settling on its own', async () => {
+    // Interleaved: the default rolls back while the named one commits, both
+    // in flight at the same time — neither outcome touches the other.
+    const [defaultResult] = await Promise.allSettled([
+      service.defaultOnly('d1', 120, true),
+      service.secondaryOnly('s1', 60),
+    ]);
+
+    expect(defaultResult.status).toBe('rejected');
+    const names = (await prisma.author.findMany()).map((a) => a.name);
+    expect(names).toEqual(['s1']); // named committed; default rolled back
   });
 });

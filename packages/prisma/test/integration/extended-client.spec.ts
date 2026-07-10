@@ -1,10 +1,13 @@
 import { Injectable, Module } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { runOnTransactionCommit, runOnTransactionRollback } from '@nestjs-transactions/core';
 import { Prisma } from '@prisma/client';
 import { InjectPrismaClient } from '../../src/prisma-client.provider';
 import { Transactional } from '../../src/transactional';
 import { TransactionalModule } from '../../src/transactional.module';
 import { PrismaModule, PrismaService } from './fixtures';
+
+const events: string[] = [];
 
 const EXTENDED_PRISMA = 'EXTENDED_PRISMA';
 
@@ -52,6 +55,20 @@ class ShoutingService {
       throw new Error('rollback');
     }
   }
+
+  @Transactional()
+  async createWithHooks(name: string, fail = false): Promise<void> {
+    runOnTransactionCommit(() => {
+      events.push('commit');
+    });
+    runOnTransactionRollback((error) => {
+      events.push(`rollback:${error.message}`);
+    });
+    await this.prisma.author.createShouting(name);
+    if (fail) {
+      throw new Error('rollback');
+    }
+  }
 }
 
 /**
@@ -83,12 +100,25 @@ describe('extended ($extends) client (integration)', () => {
   });
 
   beforeEach(async () => {
+    events.splice(0);
     await prisma.entry.deleteMany();
     await prisma.author.deleteMany();
   });
 
   afterAll(async () => {
     await moduleRef.close();
+  });
+
+  it('fires commit hooks for a transaction on the extended client', async () => {
+    await service.createWithHooks('ada');
+    expect(events).toEqual(['commit']);
+    await expect(prisma.author.count()).resolves.toBe(1);
+  });
+
+  it('fires rollback hooks when a transaction on the extended client throws', async () => {
+    await expect(service.createWithHooks('ada', true)).rejects.toThrow('rollback');
+    expect(events).toEqual(['rollback:rollback']);
+    await expect(prisma.author.count()).resolves.toBe(0);
   });
 
   it('commits extension-method and plain writes together', async () => {

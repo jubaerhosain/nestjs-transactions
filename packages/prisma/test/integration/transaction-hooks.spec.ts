@@ -75,6 +75,27 @@ class AuthorService {
   }
 
   @Transactional()
+  async outerWithSucceedingNested(name: string): Promise<void> {
+    registerHooks('outer');
+    await this.prisma.author.create({ data: { name } });
+    await this.innerNested(`${name}-nested`, false);
+  }
+
+  @Transactional({ propagation: Propagation.NEVER })
+  async registerWhileNever(): Promise<void> {
+    registerHooks('never');
+  }
+
+  @Transactional()
+  async outerRegisteringThenJoined(name: string): Promise<void> {
+    runOnTransactionCommit(() => {
+      events.push('commit:outer');
+    });
+    await this.prisma.author.create({ data: { name } });
+    await this.registerFromJoined();
+  }
+
+  @Transactional()
   async joinedInner(name: string, fail = false): Promise<void> {
     await this.prisma.author.create({ data: { name } });
     await this.registerFromJoined();
@@ -195,6 +216,26 @@ describe('transaction hooks with Prisma (integration)', () => {
 
   it('registering a hook inside a suspended NOT_SUPPORTED scope throws', async () => {
     await expect(service.callSuspendedRegistration()).rejects.toThrow(/No active transaction/);
+  });
+
+  it('registering a hook inside a NEVER top-level method throws', async () => {
+    await expect(service.registerWhileNever()).rejects.toThrow(/No active transaction/);
+  });
+
+  it('NESTED success: the savepoint commit hook fires before the outer commit', async () => {
+    await service.outerWithSucceedingNested('ada');
+
+    // Savepoint release settles first, then the enclosing transaction commits.
+    expect(events).toEqual(['commit:nested', 'commit:outer']);
+    const names = (await prisma.author.findMany()).map((a) => a.name).sort();
+    expect(names).toEqual(['ada', 'ada-nested']);
+  });
+
+  it('joined REQUIRED: hooks fire in registration order on the single outer commit', async () => {
+    await service.outerRegisteringThenJoined('ada');
+
+    // Outer hook registered first, joined-inner hook second — one shared registry.
+    expect(events).toEqual(['commit:outer', 'commit:joined']);
   });
 
   it('a commit hook can write through the injected client (base client, post-commit)', async () => {

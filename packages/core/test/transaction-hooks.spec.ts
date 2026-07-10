@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ClsPluginTransactional, NoOpTransactionalAdapter } from '@nestjs-cls/transactional';
 import { ClsModule } from 'nestjs-cls';
-import { Transactional } from '../src';
+import { Propagation, Transactional } from '../src';
 import { runOnTransactionCommit, runOnTransactionComplete, runOnTransactionRollback } from '../src';
 import { applyTransactionHooks } from '../src/transaction-hooks';
 import { createNoOpTransactionalModule } from '../src/testing';
@@ -236,6 +236,56 @@ describe('transaction hooks', () => {
     expect(() => runOnTransactionCommit(() => undefined)).toThrow(/No active transaction/);
     expect(() => runOnTransactionRollback(() => undefined)).toThrow(/No active transaction/);
     expect(() => runOnTransactionComplete(() => undefined)).toThrow(/No active transaction/);
+  });
+
+  // Distinct from the case above: here CLS IS active and carries an inherited
+  // registry, but the transaction is SUSPENDED by an inner NOT_SUPPORTED/NEVER
+  // scope — the guard must still throw (transaction-hooks.ts:63 sub-branch).
+  describe('registration in a suspended scope', () => {
+    @Injectable()
+    class SuspendService {
+      outerCommitted = false;
+
+      @Transactional(Propagation.NOT_SUPPORTED)
+      async notSupportedInner(): Promise<void> {
+        runOnTransactionCommit(() => undefined);
+      }
+
+      @Transactional()
+      async outerCallingNotSupported(): Promise<void> {
+        runOnTransactionCommit(() => {
+          this.outerCommitted = true;
+        });
+        await this.notSupportedInner();
+      }
+
+      @Transactional(Propagation.NEVER)
+      async neverTopLevel(): Promise<void> {
+        runOnTransactionCommit(() => undefined);
+      }
+    }
+
+    async function bootSuspend() {
+      const moduleRef = await Test.createTestingModule({
+        imports: [createNoOpTransactionalModule()],
+        providers: [SuspendService],
+      }).compile();
+      return { moduleRef, service: moduleRef.get(SuspendService) };
+    }
+
+    it('throws inside a NOT_SUPPORTED inner method while the outer still commits', async () => {
+      const { moduleRef, service } = await bootSuspend();
+
+      await expect(service.outerCallingNotSupported()).rejects.toThrow(/No active transaction/);
+      await moduleRef.close();
+    });
+
+    it('throws inside a NEVER top-level method', async () => {
+      const { moduleRef, service } = await bootSuspend();
+
+      await expect(service.neverTopLevel()).rejects.toThrow(/No active transaction/);
+      await moduleRef.close();
+    });
   });
 
   describe('applyTransactionHooks idempotency', () => {

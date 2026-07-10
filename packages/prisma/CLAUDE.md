@@ -10,9 +10,6 @@ silently runs inside the active interactive transaction (propagated via CLS).
 No monkey-patching; built on `@nestjs-transactions/core` +
 `@nestjs-cls/transactional-adapter-prisma`.
 
-**Status: prototype.** Working end-to-end (unit + integration tested), but not
-yet at full parity polish with the typeorm package.
-
 ## Public surface (`src/index.ts`)
 
 - `Transactional` + `TransactionalOptions` — `src/transactional.ts`. The
@@ -32,6 +29,17 @@ connectionName? })`. `prismaToken` is required — the DI token the app's
   headline DX: a proxy over `txHost.tx` (transaction client inside
   `@Transactional()`, base client outside), built on core's
   `createTransactionAwareProxy`.
+- `IsolationLevel` enum — `src/isolation-level.ts`. Ergonomic isolation
+  levels (`@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })`).
+  Named and cased to match the typeorm adapter's `IsolationLevel` (SCREAMING_SNAKE
+  members); only the underlying string values differ (Prisma's PascalCase
+  literals, e.g. `'Serializable'`, vs TypeORM's SQL literals).
+  **Unlike typeorm's `IsolationLevel`, the compile-time sync guard lives in the
+  tests** (`test/unit/isolation-level.spec.ts`), not in `src/`: Prisma's
+  isolation union is only on the _generated_ client, and `src/` deliberately
+  never imports it (so `build` works without `prisma generate`). `pnpm typecheck`
+  runs `prisma generate` and type-checks tests, so the guard still fails the
+  build if Prisma's literals drift.
 - Re-exported core symbols (`TransactionHost`, `Propagation`, error classes,
   token helpers, hooks `runOnTransactionCommit/Rollback/Complete`) — same
   identity as core.

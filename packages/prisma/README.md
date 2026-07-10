@@ -7,8 +7,6 @@ services. Built entirely on
 [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/); **no
 monkey-patching**, standard NestJS DI throughout.
 
-> **Status: prototype.** The API may still change.
-
 ## Install
 
 ```bash
@@ -72,6 +70,15 @@ the same transaction by default (`Propagation.REQUIRED`) — or choose
 
 ```ts
 @Transactional({ propagation: Propagation.REQUIRES_NEW, timeout: 30_000 })
+```
+
+Set the isolation level with the `IsolationLevel` enum (autocomplete, no
+typos) — it is accepted anywhere Prisma's raw isolation string is:
+
+```ts
+import { IsolationLevel } from '@nestjs-transactions/prisma';
+
+@Transactional({ isolationLevel: IsolationLevel.SERIALIZABLE })
 ```
 
 ## Unit testing

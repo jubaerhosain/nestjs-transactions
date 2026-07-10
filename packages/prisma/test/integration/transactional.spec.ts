@@ -174,6 +174,30 @@ class AuthorService {
   }
 
   @Transactional()
+  async createAndReportTxId(name: string): Promise<string> {
+    await this.prisma.author.create({ data: { name } });
+    // txid_current() assigns (and returns) a real, unique xid once the tx has
+    // written — a faithful per-transaction identity from Postgres itself.
+    const rows = await this.prisma.$queryRaw<
+      { txid: string }[]
+    >`SELECT txid_current()::text AS txid`;
+    return rows[0].txid;
+  }
+
+  @Transactional({ propagation: Propagation.NESTED })
+  async nestedContainingRequiresNew(name: string): Promise<void> {
+    await this.prisma.author.create({ data: { name: `${name}-nested` } });
+    await this.inner.addAuthorRequiresNew(`${name}-rn`);
+  }
+
+  @Transactional()
+  async requiresNewInsideNested(name: string): Promise<void> {
+    await this.prisma.author.create({ data: { name } });
+    await this.nestedContainingRequiresNew(name);
+    throw new Error('rollback');
+  }
+
+  @Transactional()
   async staggeredCreate(name: string, delayMs: number, fail = false): Promise<void> {
     const author = await this.prisma.author.create({ data: { name } });
     await sleep(delayMs);
@@ -345,5 +369,23 @@ describe('@Transactional with Prisma (integration)', () => {
     expect(authors).toEqual(['c1', 'c3']);
     const entries = (await prisma.entry.findMany()).map((e) => e.title).sort();
     expect(entries).toEqual(['c1-entry', 'c3-entry']);
+  });
+
+  it('gives each concurrent invocation its own physical transaction (distinct txids)', async () => {
+    const names = ['p1', 'p2', 'p3', 'p4', 'p5'];
+    const txids = await Promise.all(names.map((n) => service.createAndReportTxId(n)));
+
+    // No transaction bleed: every concurrent call ran in a distinct Postgres tx.
+    expect(new Set(txids).size).toBe(names.length);
+    await expect(prisma.author.count()).resolves.toBe(names.length);
+  });
+
+  it('REQUIRES_NEW nested inside NESTED commits independently of the outer rollback', async () => {
+    await expect(service.requiresNewInsideNested('ada')).rejects.toThrow('rollback');
+
+    // The REQUIRES_NEW write committed on its own; the outer write and the
+    // savepoint-scoped nested write both rolled back with the outer transaction.
+    const names = (await prisma.author.findMany()).map((a) => a.name);
+    expect(names).toEqual(['ada-rn']);
   });
 });
