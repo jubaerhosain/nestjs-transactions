@@ -1,5 +1,11 @@
 # @nestjs-transactions/prisma
 
+## 1.0.1
+
+### Patch Changes
+
+- [#26](https://github.com/jubaerhosain/nestjs-transactions/pull/26) [`fbaa4dd`](https://github.com/jubaerhosain/nestjs-transactions/commit/fbaa4ddf2d69805a8ea54fbeede1863e935c0391) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - docs(prisma): publish the enhanced README to the npm registry — detailed usage and configuration examples. npm only refreshes the README on a new version, so this patch republishes the package with the updated docs.
+
 ## 1.0.0
 
 ### Major Changes
