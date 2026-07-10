@@ -12,9 +12,7 @@ import { FakePrismaClient, FakePrismaModule } from './fake-client';
 // lives in the tests (typecheck runs `prisma generate` first) rather than in
 // `src/`, which never imports the generated client. If Prisma's literals ever
 // drift from ours, `pnpm typecheck` fails here.
-type _AssertInSync = `${IsolationLevel}` extends Prisma.TransactionIsolationLevel
-  ? true
-  : never;
+type _AssertInSync = `${IsolationLevel}` extends Prisma.TransactionIsolationLevel ? true : never;
 const _assertInSync: _AssertInSync = true;
 void _assertInSync;
 
