@@ -1,6 +1,7 @@
 import { Transactional as clsTransactional } from '@nestjs-transactions/core';
 import type { Propagation } from '@nestjs-transactions/core';
-import { normalizeName, PrismaTxOptions } from './interfaces';
+import { PrismaTxOptions } from './interfaces';
+import { normalizeName } from './normalize-name';
 
 /**
  * Options for {@link Transactional}. A single object carrying the connection,

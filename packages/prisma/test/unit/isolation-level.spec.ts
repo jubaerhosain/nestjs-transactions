@@ -7,14 +7,25 @@ import { Transactional } from '../../src/transactional';
 import { TransactionalModule } from '../../src/transactional.module';
 import { FakePrismaClient, FakePrismaModule } from './fake-client';
 
-// Compile-time guard: every enum value must remain a valid Prisma isolation
-// level. Prisma's union lives on the *generated* client, so this assertion
-// lives in the tests (typecheck runs `prisma generate` first) rather than in
-// `src/`, which never imports the generated client. If Prisma's literals ever
-// drift from ours, `pnpm typecheck` fails here.
+// Compile-time guard: the enum and Prisma's isolation-level literals must stay
+// in sync in BOTH directions. Prisma's union lives on the *generated* client,
+// so these assertions live in the tests (typecheck runs `prisma generate`
+// first) rather than in `src/`, which never imports the generated client. If
+// the two ever drift, `pnpm typecheck` fails here.
+//
+// enum ⊆ Prisma: every IsolationLevel value is a valid Prisma literal (fails if
+// Prisma renames or removes one we use).
 type _AssertInSync = `${IsolationLevel}` extends Prisma.TransactionIsolationLevel ? true : never;
 const _assertInSync: _AssertInSync = true;
 void _assertInSync;
+
+// Prisma ⊆ enum: every Prisma literal is exposed by IsolationLevel (fails if
+// Prisma ADDS a level we haven't mirrored here).
+type _AssertExhaustive = Prisma.TransactionIsolationLevel extends `${IsolationLevel}`
+  ? true
+  : never;
+const _assertExhaustive: _AssertExhaustive = true;
+void _assertExhaustive;
 
 describe('IsolationLevel', () => {
   it('exposes Prisma’s own isolation-level literals as enum values', () => {

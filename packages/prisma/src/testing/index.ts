@@ -1,6 +1,6 @@
 import { DynamicModule } from '@nestjs/common';
 import { createNoOpTransactionalModule } from '@nestjs-transactions/core/testing';
-import { normalizeName } from '../interfaces';
+import { normalizeName } from '../normalize-name';
 import {
   getPrismaClientToken,
   provideTransactionAwarePrismaClient,

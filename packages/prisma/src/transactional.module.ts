@@ -2,13 +2,13 @@ import { DynamicModule } from '@nestjs/common';
 import { createTransactionalModule } from '@nestjs-transactions/core';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import {
-  normalizeName,
   PrismaTransactionalAsyncFactoryResult,
   PrismaTransactionalAsyncOptions,
   PrismaTransactionalOptions,
   PrismaTxOptions,
   SqlFlavor,
 } from './interfaces';
+import { normalizeName } from './normalize-name';
 import {
   getPrismaClientToken,
   provideTransactionAwarePrismaClient,

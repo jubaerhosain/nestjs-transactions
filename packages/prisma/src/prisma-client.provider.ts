@@ -5,7 +5,7 @@ import {
   TransactionHost,
 } from '@nestjs-transactions/core';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { normalizeName } from './interfaces';
+import { normalizeName } from './normalize-name';
 
 const PRISMA_CLIENT_TOKEN = 'TRANSACTIONAL_PRISMA_CLIENT';
 

@@ -50,10 +50,3 @@ export interface PrismaTransactionalAsyncOptions extends TransactionalAsyncOptio
   prismaToken: InjectionToken;
   sqlFlavor?: SqlFlavor;
 }
-
-const DEFAULT_CONNECTION_NAME = 'default';
-
-/** Map the literal 'default' name to `undefined` (the default connection). */
-export function normalizeName(name: string | undefined): string | undefined {
-  return name === DEFAULT_CONNECTION_NAME ? undefined : name;
-}
