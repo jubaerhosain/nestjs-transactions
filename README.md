@@ -2,6 +2,8 @@
 
 **Declarative transaction propagation for NestJS with vanilla ergonomics.** Keep `@InjectRepository(Entity)`, add `@Transactional()`, done — transactions propagate through CLS (`AsyncLocalStorage`), across services, with zero monkey-patching.
 
+📖 **Documentation: [jubaerhosain.github.io/nestjs-transactions](https://jubaerhosain.github.io/nestjs-transactions/)**
+
 ```ts
 @Injectable()
 export class MemberService {
@@ -57,7 +59,7 @@ export class AppModule {}
 export class MemberModule {}
 ```
 
-That's the whole setup. See the [`@nestjs-transactions/typeorm` README](./packages/typeorm/README.md) for propagation modes, multiple data sources, custom repositories, and testing utilities.
+That's the whole setup. See the [documentation site](https://jubaerhosain.github.io/nestjs-transactions/) for propagation modes, multiple data sources, custom repositories, and testing utilities — for both the [TypeORM](https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm) and [Prisma](https://jubaerhosain.github.io/nestjs-transactions/docs/prisma) adapters.
 
 ## Development
 

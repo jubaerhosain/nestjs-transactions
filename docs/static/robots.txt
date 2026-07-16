@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jubaerhosain.github.io/nestjs-transactions/sitemap.xml

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="nestjs-transactions">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a0410"/>
+      <stop offset="1" stop-color="#3a0a24"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g transform="translate(96 150)">
+    <rect width="120" height="120" rx="26" fill="#b4194b"/>
+    <path d="M34 30 h34 a21 21 0 0 1 0 42 h-17 v18 h-17 z" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round"/>
+  </g>
+  <text x="96" y="360" font-family="'Segoe UI', system-ui, sans-serif" font-size="76" font-weight="700" fill="#ffffff">nestjs-transactions</text>
+  <text x="96" y="432" font-family="'Segoe UI', system-ui, sans-serif" font-size="38" fill="#ff9bbb">Declarative @Transactional() for NestJS</text>
+  <text x="96" y="486" font-family="'Segoe UI', system-ui, sans-serif" font-size="34" fill="#c9b2bd">TypeORM &amp; Prisma · CLS propagation · no monkey-patching</text>
+</svg>

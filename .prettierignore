@@ -1,4 +1,7 @@
 # Machine-generated / machine-owned formatting
 pnpm-lock.yaml
+# Docusaurus generated output (authored docs/ markdown stays prettier-clean)
+docs/build/
+docs/.docusaurus/
 # Local, untracked Claude Code settings
 .claude/
