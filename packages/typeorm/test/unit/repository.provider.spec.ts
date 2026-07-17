@@ -14,13 +14,15 @@ describe('provideTransactionAwareRepository', () => {
   it('claims the exact token @InjectRepository resolves for the default data source', () => {
     const provider = provideTransactionAwareRepository(Member) as FactoryProvider;
     expect(provider.provide).toBe(getRepositoryToken(Member));
-    expect(provider.inject).toEqual([getTransactionHostToken(undefined)]);
+    expect(provider.inject).toEqual([
+      { token: getTransactionHostToken(undefined), optional: true },
+    ]);
   });
 
   it('claims the named tokens when a connection name is given', () => {
     const provider = provideTransactionAwareRepository(Member, 'stats') as FactoryProvider;
     expect(provider.provide).toBe(getRepositoryToken(Member, 'stats'));
-    expect(provider.inject).toEqual([getTransactionHostToken('stats')]);
+    expect(provider.inject).toEqual([{ token: getTransactionHostToken('stats'), optional: true }]);
   });
 
   it('derives the connection name from a dataSource-only object form', () => {
@@ -28,7 +30,7 @@ describe('provideTransactionAwareRepository', () => {
       dataSource: 'stats',
     }) as FactoryProvider;
     expect(provider.provide).toBe(getRepositoryToken(Member, 'stats'));
-    expect(provider.inject).toEqual([getTransactionHostToken('stats')]);
+    expect(provider.inject).toEqual([{ token: getTransactionHostToken('stats'), optional: true }]);
   });
 
   it('lets connectionName and dataSource differ via the object form', () => {
@@ -37,7 +39,19 @@ describe('provideTransactionAwareRepository', () => {
       dataSource: 'statsDb',
     }) as FactoryProvider;
     expect(provider.provide).toBe(getRepositoryToken(Member, 'statsDb'));
-    expect(provider.inject).toEqual([getTransactionHostToken('stats')]);
+    expect(provider.inject).toEqual([{ token: getTransactionHostToken('stats'), optional: true }]);
+  });
+
+  it('throws a guided bootstrap error when the transactional connection is missing', () => {
+    // The classic mix-up: TypeOrmModule.forRoot() imported from '@nestjs/typeorm'
+    // (which registers no TransactionHost) alongside OUR forFeature.
+    const provider = provideTransactionAwareRepository(Member) as FactoryProvider;
+    expect(() => provider.useFactory(undefined)).toThrow(
+      /No transactional connection 'default'.*imported from '@nestjs\/typeorm' instead of.*'@nestjs-transactions\/typeorm'/s,
+    );
+
+    const named = provideTransactionAwareRepository(Member, 'stats') as FactoryProvider;
+    expect(() => named.useFactory(undefined)).toThrow(/No transactional connection 'stats'/);
   });
 
   it('delegates every call to the repository of the current EntityManager', () => {

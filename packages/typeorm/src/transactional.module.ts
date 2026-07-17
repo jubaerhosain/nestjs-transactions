@@ -1,6 +1,5 @@
 import { DynamicModule } from '@nestjs/common';
 import { getDataSourceToken } from '@nestjs/typeorm';
-import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { createTransactionalModule } from '@nestjs-transactions/core';
 import {
   TransactionalAdapterTypeOrm,
@@ -8,13 +7,11 @@ import {
 } from '@nestjs-cls/transactional-adapter-typeorm';
 import { DataSource } from 'typeorm';
 import {
-  ForFeatureConnection,
   resolveConnection,
   TypeOrmTransactionalAsyncFactoryResult,
   TypeOrmTransactionalAsyncOptions,
   TypeOrmTransactionalOptions,
 } from './interfaces';
-import { buildFeatureProviders } from './repository.provider';
 
 const ASYNC_OPTIONS_TOKEN = Symbol('TYPEORM_TRANSACTIONAL_ASYNC_OPTIONS');
 
@@ -65,6 +62,12 @@ const TransactionalModuleBase = createTransactionalModule<
   }),
 });
 
+/**
+ * INTERNAL — the transaction-propagation half of the public unified
+ * `TypeOrmModule` (`src/typeorm.module.ts`), which composes this module with
+ * `@nestjs/typeorm`'s. Not exported from the package; it wires the CLS
+ * transactional plugin against an already-registered DataSource token.
+ */
 export class TransactionalModule extends TransactionalModuleBase {
   static override forRoot(options: TypeOrmTransactionalOptions = {}): DynamicModule {
     return super.forRoot(withResolvedConnection(options));
@@ -72,24 +75,6 @@ export class TransactionalModule extends TransactionalModuleBase {
 
   static override forRootAsync(options: TypeOrmTransactionalAsyncOptions): DynamicModule {
     return super.forRootAsync(withResolvedConnection(options));
-  }
-
-  /**
-   * Register transaction-aware repositories for the given entities under the
-   * standard `@InjectRepository` tokens. Use instead of
-   * `TypeOrmModule.forFeature()` for these entities — do not use both for the
-   * same entity in the same module.
-   */
-  static forFeature(
-    entities: EntityClassOrSchema[],
-    connection?: ForFeatureConnection,
-  ): DynamicModule {
-    const { providers, exports } = buildFeatureProviders(entities, connection);
-    return {
-      module: TransactionalModule,
-      providers,
-      exports,
-    };
   }
 }
 

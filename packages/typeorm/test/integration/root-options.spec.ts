@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { DynamicModule, Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  InjectRepository,
   InjectTransaction,
   IsolationLevel,
   Transactional,
   TransactionalAdapterTypeOrm,
-  TransactionalModule,
+  TypeOrmModule,
 } from '../../src';
 import type { Transaction } from '../../src';
 import { Member, PG_A } from './fixtures';
@@ -34,13 +34,9 @@ class IsolationProbe {
   }
 }
 
-async function bootWith(transactionalRoot: ReturnType<typeof TransactionalModule.forRoot>) {
+async function bootWith(root: DynamicModule) {
   const moduleRef = await Test.createTestingModule({
-    imports: [
-      TypeOrmModule.forRoot(PG_A),
-      transactionalRoot,
-      TransactionalModule.forFeature([Member]),
-    ],
+    imports: [root, TypeOrmModule.forFeature([Member])],
     providers: [IsolationProbe],
   }).compile();
   await moduleRef.init();
@@ -54,7 +50,8 @@ describe('forRoot options (real Postgres)', () => {
 
   it('applies defaultTxOptions from forRoot to every transaction', async () => {
     moduleRef = await bootWith(
-      TransactionalModule.forRoot({
+      TypeOrmModule.forRoot({
+        ...PG_A,
         defaultTxOptions: { isolationLevel: IsolationLevel.SERIALIZABLE },
       }),
     );
@@ -62,21 +59,30 @@ describe('forRoot options (real Postgres)', () => {
     await expect(probe.currentIsolationLevel()).resolves.toBe('serializable');
   });
 
-  it('applies defaultTxOptions resolved asynchronously via forRootAsync', async () => {
+  it('applies options resolved asynchronously via forRootAsync — factory runs ONCE', async () => {
+    let factoryCalls = 0;
     moduleRef = await bootWith(
-      TransactionalModule.forRootAsync({
-        useFactory: async () => ({
-          defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
-        }),
+      TypeOrmModule.forRootAsync({
+        useFactory: async () => {
+          factoryCalls += 1;
+          return {
+            ...PG_A,
+            defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
+          };
+        },
       }),
     );
     const probe = moduleRef.get(IsolationProbe);
     await expect(probe.currentIsolationLevel()).resolves.toBe('repeatable read');
+    // Both the DataSource and the transactional plugin consumed the SAME
+    // factory result — the shared options module deduped to one instance.
+    expect(factoryCalls).toBe(1);
   });
 
   it('lets per-call @Transactional options override defaultTxOptions', async () => {
     moduleRef = await bootWith(
-      TransactionalModule.forRoot({
+      TypeOrmModule.forRoot({
+        ...PG_A,
         defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
       }),
     );
@@ -90,8 +96,8 @@ describe('forRoot options (real Postgres)', () => {
   // defaultTxOptions when app B's factory resolved none.
   it('does not leak async defaultTxOptions across app compiles of one module', async () => {
     let txOptions: object | undefined = { isolationLevel: IsolationLevel.SERIALIZABLE };
-    const sharedModule = TransactionalModule.forRootAsync({
-      useFactory: async () => ({ defaultTxOptions: txOptions as any }),
+    const sharedModule = TypeOrmModule.forRootAsync({
+      useFactory: async () => ({ ...PG_A, defaultTxOptions: txOptions as any }),
     });
 
     moduleRef = await bootWith(sharedModule);
@@ -135,9 +141,8 @@ describe('forRoot({ enableTransactionProxy: true }) + @InjectTransaction (real P
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot(PG_A),
-        TransactionalModule.forRoot({ enableTransactionProxy: true }),
-        TransactionalModule.forFeature([Member]),
+        TypeOrmModule.forRoot({ ...PG_A, enableTransactionProxy: true }),
+        TypeOrmModule.forFeature([Member]),
       ],
       providers: [TxProbe],
     }).compile();

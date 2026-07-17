@@ -46,6 +46,11 @@ What an adapter package consumes from here:
   adapter's `TransactionalModule` (`forRoot`/`forRootAsync`/`forFeature`).
 - `createTransactionAwareProxy` — `src/transaction-aware-proxy.ts`. Makes a
   repository/manager resolve to the active transactional instance.
+- `TRANSACTION_AWARE` — same file. Well-known symbol every proxy answers with
+  `true` **without resolving its target** (first branch of the `get`/`has`
+  traps — keep it there). Lets adapters tell transaction-aware providers from
+  plain ORM instances under the same DI token (used by the typeorm adapter's
+  repository-conflict check).
 - Interfaces — `src/interfaces.ts` (`AdapterRegistration`,
   `TransactionalRootOptionsBase`, `TransactionalAsyncOptionsBase`,
   `TransactionalModuleDefinition`).

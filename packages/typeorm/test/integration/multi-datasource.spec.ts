@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  InjectRepository,
   InjectTransactionHost,
   IsolationLevel,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
-  TransactionalModule,
   TransactionHost,
+  TypeOrmModule,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
 
@@ -76,10 +76,8 @@ describe('multiple data sources (real Postgres, two databases)', () => {
       imports: [
         TypeOrmModule.forRoot(PG_A),
         TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TransactionalModule.forRoot(),
-        TransactionalModule.forRoot({ connectionName: 'stats' }),
-        TransactionalModule.forFeature([Member]),
-        TransactionalModule.forFeature([Stat], 'stats'),
+        TypeOrmModule.forFeature([Member]),
+        TypeOrmModule.forFeature([Stat], 'stats'),
       ],
       providers: [ReportingService],
     }).compile();
@@ -133,7 +131,7 @@ describe('multiple data sources (real Postgres, two databases)', () => {
 
 // Regression for the review finding: { dataSource: 'stats' } used to bind the
 // stats repository to the DEFAULT connection's manager (silent wrong database).
-describe('forFeature/forRoot with dataSource-only options (real Postgres)', () => {
+describe('forFeature with object-form dataSource-only options (real Postgres)', () => {
   @Injectable()
   class StatsService {
     constructor(@InjectRepository(Stat, 'stats') readonly stats: Repository<Stat>) {}
@@ -152,8 +150,7 @@ describe('forFeature/forRoot with dataSource-only options (real Postgres)', () =
     moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TransactionalModule.forRoot({ dataSource: 'stats' }),
-        TransactionalModule.forFeature([Stat], { dataSource: 'stats' }),
+        TypeOrmModule.forFeature([Stat], { dataSource: 'stats' }),
       ],
       providers: [StatsService],
     }).compile();

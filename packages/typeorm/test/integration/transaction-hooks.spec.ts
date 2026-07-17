@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  InjectRepository,
   Propagation,
   runOnTransactionCommit,
   runOnTransactionComplete,
   runOnTransactionRollback,
   Transactional,
   TransactionalAdapterTypeOrm,
-  TransactionalModule,
   TransactionHost,
+  TypeOrmModule,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
 
@@ -181,11 +181,7 @@ describe('transaction hooks (real Postgres)', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot(PG_A),
-        TransactionalModule.forRoot(),
-        TransactionalModule.forFeature([Member]),
-      ],
+      imports: [TypeOrmModule.forRoot(PG_A), TypeOrmModule.forFeature([Member])],
       providers: [HookService],
     }).compile();
     await moduleRef.init();
@@ -330,10 +326,8 @@ describe('transaction hooks across two connections (real Postgres)', () => {
       imports: [
         TypeOrmModule.forRoot(PG_A),
         TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TransactionalModule.forRoot(),
-        TransactionalModule.forRoot({ connectionName: 'stats' }),
-        TransactionalModule.forFeature([Member]),
-        TransactionalModule.forFeature([Stat], 'stats'),
+        TypeOrmModule.forFeature([Member]),
+        TypeOrmModule.forFeature([Stat], 'stats'),
       ],
       providers: [CrossConnectionHookService],
     }).compile();

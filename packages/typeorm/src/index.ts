@@ -25,14 +25,28 @@ export {
 export { Transactional } from './transactional';
 export type { TransactionalOptions } from './transactional';
 
-// The module: forRoot / forRootAsync / forFeature
-export { TransactionalModule } from './transactional.module';
+// The module: forRoot / forRootAsync / forFeature. A drop-in replacement for
+// @nestjs/typeorm's TypeOrmModule that also owns transaction propagation —
+// use it INSTEAD of (never alongside) the @nestjs/typeorm module.
+export { TypeOrmModule } from './typeorm.module';
 export type {
   DataSourceRef,
   ForFeatureConnection,
-  TypeOrmTransactionalAsyncOptions,
-  TypeOrmTransactionalOptions,
+  TypeOrmRootAsyncOptions,
+  TypeOrmRootOptions,
 } from './interfaces';
+
+// @nestjs/typeorm essentials re-exported (same symbol identity), so apps need
+// a single import for the full repository workflow. The deprecated
+// InjectConnection/getConnectionToken are deliberately not re-exported.
+export {
+  InjectDataSource,
+  InjectEntityManager,
+  InjectRepository,
+  getDataSourceToken,
+  getEntityManagerToken,
+  getRepositoryToken,
+} from '@nestjs/typeorm';
 
 // TypeORM-specific extras
 export { IsolationLevel } from './isolation-level';

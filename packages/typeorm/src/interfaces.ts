@@ -3,7 +3,11 @@ import {
   TransactionalRootOptionsBase,
 } from '@nestjs-transactions/core';
 import { TypeOrmTransactionOptions } from '@nestjs-cls/transactional-adapter-typeorm';
-import { ModuleMetadata } from '@nestjs/common';
+import { InjectionToken, ModuleMetadata, Provider } from '@nestjs/common';
+import type {
+  TypeOrmDataSourceFactory,
+  TypeOrmModuleOptions as NestTypeOrmModuleOptions,
+} from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
 
 /** How a TypeORM DataSource is referenced — same forms `@nestjs/typeorm` accepts. */
@@ -33,6 +37,58 @@ export interface TypeOrmTransactionalAsyncFactoryResult {
  */
 export interface TypeOrmTransactionalAsyncOptions extends TransactionalAsyncOptionsBase<TypeOrmTransactionalAsyncFactoryResult> {
   dataSource?: DataSourceRef;
+}
+
+/**
+ * Options of the unified `TypeOrmModule.forRoot()`: everything
+ * `@nestjs/typeorm`'s `forRoot` accepts (the module creates the DataSource),
+ * plus the transactional options. `name` drives both the DataSource name and
+ * the transactional connection name.
+ */
+export type TypeOrmRootOptions = NestTypeOrmModuleOptions & {
+  /** Default options merged into every transaction on this connection. */
+  defaultTxOptions?: Partial<TypeOrmTransactionOptions>;
+  /**
+   * Enables injecting the transaction instance directly with `@InjectTransaction()`.
+   *
+   * Default: `false`
+   */
+  enableTransactionProxy?: boolean;
+  /**
+   * Startup check that fails the boot (`'error'`, the default) or logs
+   * (`'warn'`) when plain TypeORM repositories are registered on this
+   * DataSource — the classic mix-up of using `TypeOrmModule.forFeature` from
+   * `@nestjs/typeorm` (or hand-rolled `Repository` providers), which silently
+   * bypass `@Transactional()`. Set `'off'` if unproxied repositories on this
+   * connection are intentional.
+   *
+   * Default: `'error'`
+   */
+  repositoryConflictCheck?: 'error' | 'warn' | 'off';
+};
+
+/**
+ * Async variant of {@link TypeOrmRootOptions}: the factory resolves the
+ * combined options at DI time. `name` and `enableTransactionProxy` must be
+ * static — DI tokens and the CLS plugin are registered at module-definition
+ * time, so a `name` returned by the factory is ignored (stripped).
+ */
+export interface TypeOrmRootAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+  /** Name of the DataSource and transactional connection. Must be static. */
+  name?: string;
+  /** See {@link TypeOrmRootOptions.enableTransactionProxy}. Must be static. */
+  enableTransactionProxy?: boolean;
+  /**
+   * See {@link TypeOrmRootOptions.repositoryConflictCheck}. Must be static —
+   * a value returned by the factory is stripped and ignored.
+   */
+  repositoryConflictCheck?: 'error' | 'warn' | 'off';
+  useFactory: (...args: any[]) => Promise<TypeOrmRootOptions> | TypeOrmRootOptions;
+  inject?: InjectionToken[];
+  /** Extra providers registered alongside the options factory. */
+  extraProviders?: Provider[];
+  /** Passed through to `@nestjs/typeorm` — custom DataSource instantiation. */
+  dataSourceFactory?: TypeOrmDataSourceFactory;
 }
 
 /**

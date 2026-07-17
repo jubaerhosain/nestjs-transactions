@@ -22,9 +22,40 @@ isolationLevel? })`, matching `typeorm-transactional`'s ergonomics. It is a
   misread. This deliberately breaks the "single symbol identity" rule for
   `Transactional` only — ours is a distinct function wrapping `@nestjs-cls`'s.
   (core's `Transactional` stays the positional `@nestjs-cls` passthrough.)
-- `TransactionalModule` — `src/transactional.module.ts`
-  (`forRoot` / `forRootAsync` / `forFeature`). `forFeature([Entity])` replaces
-  `TypeOrmModule.forFeature([Entity])`.
+- `TypeOrmModule` — `src/typeorm.module.ts` (`forRoot` / `forRootAsync` /
+  `forFeature`). THE module of this package: a drop-in replacement for
+  `@nestjs/typeorm`'s `TypeOrmModule` (deliberately the same class name — users
+  change only the import line; never use both) that owns BOTH the DataSource
+  (delegating to `@nestjs/typeorm` internally, full options passthrough:
+  `autoLoadEntities`, `retryAttempts`, `name`, …) and transaction propagation
+  (`defaultTxOptions`, `enableTransactionProxy`). `name` names both the
+  DataSource and the transactional connection. Options types:
+  `TypeOrmRootOptions` / `TypeOrmRootAsyncOptions` (`src/interfaces.ts`). In
+  `forRootAsync`, one shared options module feeds both halves so the user
+  factory runs exactly once; `name`/`enableTransactionProxy` must be static.
+  `forFeature` internally imports `@nestjs/typeorm`'s `forFeature` for its
+  `EntitiesMetadataStorage` side effect (keeps `autoLoadEntities` working) and
+  shadows its repository tokens with transaction-aware providers. Both mix-up
+  directions with `@nestjs/typeorm`'s module fail at startup: the repository
+  provider injects the `TransactionHost` token as **optional** and throws a
+  guided bootstrap error when it's missing (their `forRoot` + our
+  `forFeature`), and each `forRoot` registers a `RepositoryConflictChecker`
+  (`src/repository-conflict-checker.ts`, internal, `onModuleInit`) that sweeps
+  Nest's `ModulesContainer` for `instanceof Repository` providers on its
+  DataSource whose token has no core-`TRANSACTION_AWARE`-marked instance
+  anywhere — i.e. registered via their `forFeature` or hand-rolled — and
+  throws/warns per the `repositoryConflictCheck` option (`'error'` default,
+  `'warn'`, `'off'`; static in `forRootAsync`). Known blind spot: the same
+  entity registered via both packages' `forFeature` on one connection (our
+  marked proxy exempts the token) — the README's ESLint
+  `no-restricted-imports` guard covers that.
+  `src/transactional.module.ts` (`TransactionalModule`) is now **internal** —
+  the propagation half composed by `TypeOrmModule`; not exported.
+- Re-exports from `@nestjs/typeorm` (same symbol identity): `InjectRepository`,
+  `InjectDataSource`, `InjectEntityManager`, `getDataSourceToken`,
+  `getRepositoryToken`, `getEntityManagerToken` — so end users need a single
+  import. (Deprecated `InjectConnection`/`getConnectionToken` are not
+  re-exported.)
 - `provideTransactionAwareRepository` — `src/repository.provider.ts`.
 - `TransactionalRepository` — `src/transactional.repository.ts`. Base class for
   custom repositories; the entity and `TransactionHost` are passed via the
@@ -52,8 +83,9 @@ isolationLevel? })`, matching `typeorm-transactional`'s ergonomics. It is a
 
 `./testing` subpath export (`src/testing/index.ts`):
 `createNoOpTypeOrmTransactionalModule` — a unit-test replacement for
-`forRoot()` + `forFeature()` where `@Transactional()` no-ops and
-`@InjectRepository` resolves proxies over your mocked `manager.getRepository()`.
+`TypeOrmModule.forRoot()` + `forFeature()` where `@Transactional()` no-ops and
+`@InjectRepository` resolves proxies over your mocked `manager.getRepository()`
+(no DataSource is created).
 
 - **Unit** (`test/unit/**`, `jest.config.js`): no DB.
 - **Integration** (`test/integration/**`, `jest.integration.config.js`,

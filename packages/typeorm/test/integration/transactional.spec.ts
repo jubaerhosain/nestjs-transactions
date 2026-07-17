@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  InjectRepository,
   IsolationLevel,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
-  TransactionalModule,
   TransactionAlreadyActiveError,
   TransactionHost,
   TransactionNotActiveError,
+  TypeOrmModule,
 } from '../../src';
 import { Member, PG_A } from './fixtures';
 
@@ -148,11 +148,7 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [
-        TypeOrmModule.forRoot(PG_A),
-        TransactionalModule.forRoot(),
-        TransactionalModule.forFeature([Member]),
-      ],
+      imports: [TypeOrmModule.forRoot(PG_A), TypeOrmModule.forFeature([Member])],
       providers: [MemberService, OtherService],
     }).compile();
     await moduleRef.init();
