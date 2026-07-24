@@ -1,0 +1,27 @@
+/**
+ * Global styles. Uses Infima CSS variables (Docusaurus default framework).
+ * Accent tuned toward the NestJS red so the site reads as part of that ecosystem.
+ */
+
+:root {
+  --ifm-color-primary: #b4194b;
+  --ifm-color-primary-dark: #a21744;
+  --ifm-color-primary-darker: #99163f;
+  --ifm-color-primary-darkest: #7e1234;
+  --ifm-color-primary-light: #c61b52;
+  --ifm-color-primary-lighter: #cf1c57;
+  --ifm-color-primary-lightest: #db3a6d;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #ff5c8a;
+  --ifm-color-primary-dark: #ff3a72;
+  --ifm-color-primary-darker: #ff2966;
+  --ifm-color-primary-darkest: #f10047;
+  --ifm-color-primary-light: #ff7ea2;
+  --ifm-color-primary-lighter: #ff8fae;
+  --ifm-color-primary-lightest: #ffc1d3;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}

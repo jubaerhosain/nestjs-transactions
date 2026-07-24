@@ -1,5 +1,7 @@
 packages:
   - packages/*
+  - docs
 allowBuilds:
   '@prisma/engines': true
+  core-js: false
   prisma: true

@@ -1,0 +1,54 @@
+name: Deploy Docs
+
+# Builds the Docusaurus site in docs/ and deploys it to GitHub Pages.
+# This is NOT a required status check — it only reads the repo and publishes an
+# artifact (it never pushes to main, so it is orthogonal to the branch ruleset).
+# One-time setup: repo Settings → Pages → Source = "GitHub Actions".
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Least privilege: only the deploy job needs pages/id-token write; the build
+# job just reads the repo (contents: read, inherited from here).
+permissions:
+  contents: read
+
+# Allow one concurrent deployment; don't cancel an in-progress run.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # Install only the docs project (and its deps) — avoids pulling in the
+      # prisma native engines the rest of the monorepo builds.
+      - run: pnpm install --frozen-lockfile --filter @nestjs-transactions/docs...
+      - run: pnpm --filter @nestjs-transactions/docs docs:build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

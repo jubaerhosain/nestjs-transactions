@@ -15,13 +15,27 @@ across services. Standard NestJS DI throughout.
 
 ## Monorepo layout
 
-pnpm workspace (`pnpm-workspace.yaml` → `packages/*`).
+pnpm workspace (`pnpm-workspace.yaml` → `packages/*` + `docs`).
 
 | Package                        | Path               | Role                                                                                   |
 | ------------------------------ | ------------------ | -------------------------------------------------------------------------------------- |
 | `@nestjs-transactions/core`    | `packages/core`    | ORM-agnostic building blocks + adapter-author SPI. Not imported directly by end users. |
 | `@nestjs-transactions/typeorm` | `packages/typeorm` | The TypeORM adapter — the package end users install.                                   |
 | `@nestjs-transactions/prisma`  | `packages/prisma`  | The Prisma adapter — the package end users install.                                    |
+
+**`docs/` — the documentation site.** A **private, non-published**
+[Docusaurus](https://docusaurus.io/) workspace package
+(`@nestjs-transactions/docs`) that deploys to GitHub Pages at
+`https://jubaerhosain.github.io/nestjs-transactions/`. It lives at top-level
+`docs/` (deliberately **outside** `packages/*`) and uses **unique script names**
+(`docs:dev`/`docs:build`/`docs:serve`), so `pnpm -r build`/`typecheck`/`test`
+skip it (no matching script) and `pnpm -r publish` skips it (`private: true`) —
+no CI or root-script changes were needed. **The docs site is the single source of
+truth for comprehensive docs.** The `prisma` and `core` npm READMEs are slim
+landing pages that link to it; the `typeorm` README deliberately keeps the full
+manual for now (a deliberate decision — npm users get complete docs without
+leaving the page), so TypeORM doc edits must be mirrored between the README and
+`docs/docs/typeorm/*`.
 
 **Single symbol identity:** `core` re-exports the canonical decorators, tokens,
 and error classes from `@nestjs-cls/transactional`, and every adapter re-exports
@@ -58,6 +72,18 @@ Run from the repo root unless noted. `-r` = across all workspace packages.
 | `pnpm changeset`    | Record a changeset for a user-facing change.                                                                                                                                                                                                       |
 | `pnpm ci:publish`   | Build + publish (used by release CI).                                                                                                                                                                                                              |
 
+### Docs site (`docs/`)
+
+Run via pnpm's filter (unique script names so `pnpm -r` never picks them up):
+
+| Command                                                  | What it does                                                           |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm --filter @nestjs-transactions/docs docs:dev`       | Docusaurus dev server at `http://localhost:3000/nestjs-transactions/`. |
+| `pnpm --filter @nestjs-transactions/docs docs:build`     | Production build → `docs/build` (used by the deploy workflow).         |
+| `pnpm --filter @nestjs-transactions/docs docs:serve`     | Serve the production build locally (verifies the real base URL).       |
+| `pnpm --filter @nestjs-transactions/docs docs:clear`     | `docusaurus clear` — wipe `docs/build` + `docs/.docusaurus` caches.    |
+| `pnpm --filter @nestjs-transactions/docs docs:typecheck` | `tsc` — type-check the site (config, sidebars, React pages).           |
+
 ### Integration tests
 
 Require **two Postgres 17 containers**:
@@ -79,9 +105,12 @@ two suites never touch each other's tables.
   intentionally different.
 - **`typecheck` depends on `build`:** run `pnpm -r build` before `pnpm typecheck`
   (cross-package types resolve through built `dist`).
-- **Prisma build scripts are allowlisted** in `pnpm-workspace.yaml`
-  (`allowBuilds`: `prisma`, `@prisma/engines`) — pnpm 11 blocks dependency
-  postinstall scripts by default. The prisma package's `typecheck`/`test:int`
+- **Dependency build scripts are gated** in `pnpm-workspace.yaml` — pnpm 11
+  blocks dependency postinstall scripts by default. The `allowBuilds` map
+  allows `prisma` and `@prisma/engines` (needed for `prisma generate`/`db push`)
+  and explicitly declines `core-js` (a Docusaurus transitive dependency whose
+  postinstall only prints a funding banner — set to `false` to silence pnpm's
+  "ignored build scripts" warning). The prisma package's `typecheck`/`test:int`
   scripts chain `prisma generate`/`db push` themselves (its integration tests
   import the generated client; `src/` never does, so `build` needs no generate).
 - **`main` is protected** (branch ruleset). Work on a branch and open a PR.
@@ -98,6 +127,19 @@ two suites never touch each other's tables.
   Pull requests: write); the default `GITHUB_TOKEN` is deliberately not used
   because token-authored PRs don't trigger CI. If CI stops running on that PR,
   check the `DEPS_PR_TOKEN` secret first.
+- **Docs deploy** (`.github/workflows/docs.yml`): builds `docs/` and deploys to
+  GitHub Pages via `actions/deploy-pages` on pushes to `main` under `docs/**` (or
+  manual `workflow_dispatch`). It is a **PR-independent producer, not a required
+  check**, and never pushes to `main`, so it's orthogonal to the branch ruleset.
+  Requires the one-time repo setting Settings → Pages → Source = "GitHub Actions".
+  The `docs/` dir is excluded from `eslint.config.mjs` `ignores` and its build
+  output from `.prettierignore` specifically so the `lint` job (`eslint .` +
+  `prettier --check .`) stays green — don't remove those ignores.
+- **Docs changes need a changeset only when they touch published packages.** The
+  docs site itself is private (no changeset). But editing a published
+  `package.json` (e.g. the `homepage` field) or a package README **is** a
+  user-facing change — add a `pnpm changeset` so the release workflow versions and
+  publishes it.
 - **TypeScript** (`tsconfig.base.json`): `node16` module/resolution, ES2022 CJS,
   `strict`, `isolatedModules`, `experimentalDecorators` + `emitDecoratorMetadata`.
 - **ESLint:** `@typescript-eslint/no-explicit-any` and

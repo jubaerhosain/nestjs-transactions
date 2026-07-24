@@ -2,14 +2,17 @@
 
 **Declarative `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. Inspired by [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) — a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
+📖 **[Full documentation → jubaerhosain.github.io/nestjs-transactions/docs/typeorm](https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm)**
+
 ## Install
 
 ```bash
 npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
+  @nestjs/typeorm typeorm @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
-(All are peer dependencies — this package ships zero runtime dependencies.)
+(All are peer dependencies — this package ships zero runtime dependencies. `@nestjs/common` and `@nestjs/core` are peers too, but every NestJS app already has them.)
 
 ## Quick start
 
@@ -59,7 +62,7 @@ export class MemberService {
   @Transactional()
   async register(name: string) {
     const member = await this.repo.save({ name });
-    await this.accounting.openAccount(member); // joins the SAME transaction —
+    await this.accounting.openAccount(member); // joins the SAME transaction
     return member; // no decorator needed there
   }
 }
@@ -67,9 +70,16 @@ export class MemberService {
 
 If `register` throws, everything rolls back — including writes made in `AccountingService`. Outside a transaction the repository behaves like a plain TypeORM repository.
 
-## How it works
+## Features
 
-`forFeature([Member])` registers a provider under TypeORM's standard repository token — the exact token `@InjectRepository` resolves — whose value is a lazy proxy over `txHost.tx.getRepository(Member)`. `txHost.tx` is the transactional `EntityManager` inside `@Transactional()` and the regular one outside. No prototypes are patched; it is ordinary NestJS dependency injection.
+- **Propagation** — `REQUIRED`, `REQUIRES_NEW`, `NESTED`, `MANDATORY`, `NEVER`, `SUPPORTS`, `NOT_SUPPORTED`.
+- **Isolation levels** — type-safe `IsolationLevel` enum, per-call or as defaults.
+- **Multiple data sources** — named connections.
+- **Transaction hooks** — `runOnTransactionCommit` / `Rollback` / `Complete`.
+- **Programmatic control** — `TransactionHost` without the decorator.
+- **Custom repositories** — the `NestjsTypeormRepository` base class.
+- **Testing** — a no-op module for unit tests without a database.
+- **Migration** — a drop-in path from `typeorm-transactional`.
 
 ## Propagation
 
@@ -280,7 +290,7 @@ v5 merges the two-module setup into the single `NestjsTypeormModule`:
 ## Caveats
 
 - **Register the DataSource with `NestjsTypeormModule`, and repositories with `NestjsTypeormModule.forFeature`.** Repositories registered instead with `@nestjs/typeorm`'s `TypeOrmModule.forFeature` (or hand-rolled `Repository` providers) are plain repositories bound to the base `EntityManager` — they **bypass `@Transactional()`** and their writes escape rollback. Keep both on this package's module, and don't register the same entity with both packages' `forFeature` in one module (they claim the same token; the last registration wins). For custom repository classes, extend `NestjsTypeormRepository` (above) rather than `Repository`.
-- **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `RequiresNew` for genuine parallelism.
+- **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `Propagation.REQUIRES_NEW` for genuine parallelism.
 - **`repo.extend()` on a plain repository** can't be intercepted — use `NestjsTypeormRepository` (above), whose subclasses support a transaction-aware `.extend()`.
 - If your app already uses `nestjs-cls` (`ClsModule.forRoot`), everything just works: this package only registers a CLS _plugin_ and never calls `ClsModule.forRoot()` itself.
 

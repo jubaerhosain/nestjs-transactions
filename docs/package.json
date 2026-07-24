@@ -1,0 +1,44 @@
+{
+  "name": "@nestjs-transactions/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Documentation site for nestjs-transactions (not published).",
+  "scripts": {
+    "docs:dev": "node scripts/generate-og-card.mjs && docusaurus start",
+    "docs:build": "node scripts/generate-og-card.mjs && docusaurus build",
+    "docs:serve": "docusaurus serve",
+    "docs:clear": "docusaurus clear",
+    "docs:typecheck": "tsc"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.9.0",
+    "@docusaurus/preset-classic": "^3.9.0",
+    "@mdx-js/react": "^3.0.0",
+    "clsx": "^2.1.0",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.9.0",
+    "@resvg/resvg-js": "^2.6.0",
+    "@docusaurus/tsconfig": "^3.9.0",
+    "@docusaurus/types": "^3.9.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=18.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  }
+}

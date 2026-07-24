@@ -2,15 +2,21 @@
 
 **Declarative transaction propagation for NestJS with vanilla ergonomics.** Keep `@InjectRepository(Entity)`, add `@Transactional()`, done — transactions propagate through CLS (`AsyncLocalStorage`), across services, with zero monkey-patching.
 
+📖 **Documentation: [jubaerhosain.github.io/nestjs-transactions](https://jubaerhosain.github.io/nestjs-transactions/)**
+
 ```ts
 @Injectable()
 export class MemberService {
-  constructor(@InjectRepository(Member) private readonly repo: Repository<Member>) {}
+  constructor(
+    @InjectRepository(Member) private readonly repo: Repository<Member>,
+    private readonly accounting: AccountingService,
+  ) {}
 
   @Transactional()
-  async transfer(from: string, to: string) {
-    await this.repo.save(/* ... */); // runs on the active transactional EntityManager
-    await this.accounting.record(); // same transaction, propagated through CLS
+  async register(name: string) {
+    const member = await this.repo.save({ name });
+    await this.accounting.openAccount(member); // joins the SAME transaction
+    return member; // no decorator needed there
   }
 }
 ```
@@ -37,7 +43,8 @@ Every adapter exposes the same transactional surface — `Transactional`, `Propa
 
 ```bash
 npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
+  @nestjs/typeorm typeorm @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
 ```ts
@@ -57,7 +64,7 @@ export class AppModule {}
 export class MemberModule {}
 ```
 
-That's the whole setup. See the [`@nestjs-transactions/typeorm` README](./packages/typeorm/README.md) for propagation modes, multiple data sources, custom repositories, and testing utilities.
+That's the whole setup. See the [documentation site](https://jubaerhosain.github.io/nestjs-transactions/) for propagation modes, multiple data sources, custom repositories, and testing utilities — for both the [TypeORM](https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm) and [Prisma](https://jubaerhosain.github.io/nestjs-transactions/docs/prisma) adapters.
 
 ## Development
 
