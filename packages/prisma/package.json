@@ -10,11 +10,19 @@
     "directory": "packages/prisma"
   },
   "homepage": "https://jubaerhosain.github.io/nestjs-transactions/docs/prisma",
+  "bugs": {
+    "url": "https://github.com/jubaerhosain/nestjs-transactions/issues"
+  },
   "keywords": [
     "nestjs",
+    "nestjs-transactions",
+    "nestjs-cls",
     "prisma",
+    "prisma-transactional",
     "transactional",
     "transaction",
+    "propagation",
+    "savepoint",
     "cls",
     "async-local-storage"
   ],

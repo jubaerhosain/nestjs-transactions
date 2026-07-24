@@ -1,5 +1,10 @@
 # nestjs-transactions
 
+[![CI](https://img.shields.io/github/actions/workflow/status/jubaerhosain/nestjs-transactions/ci.yml?branch=main&label=CI)](https://github.com/jubaerhosain/nestjs-transactions/actions/workflows/ci.yml)
+[![npm (typeorm)](https://img.shields.io/npm/v/%40nestjs-transactions%2Ftypeorm?label=%40nestjs-transactions%2Ftypeorm)](https://www.npmjs.com/package/@nestjs-transactions/typeorm)
+[![npm (prisma)](https://img.shields.io/npm/v/%40nestjs-transactions%2Fprisma?label=%40nestjs-transactions%2Fprisma)](https://www.npmjs.com/package/@nestjs-transactions/prisma)
+[![license](https://img.shields.io/npm/l/%40nestjs-transactions%2Ftypeorm)](./LICENSE)
+
 **Declarative transaction propagation for NestJS with vanilla ergonomics.** Keep `@InjectRepository(Entity)`, add `@Transactional()`, done — transactions propagate through CLS (`AsyncLocalStorage`), across services, with zero monkey-patching.
 
 📖 **Documentation: [jubaerhosain.github.io/nestjs-transactions](https://jubaerhosain.github.io/nestjs-transactions/)**

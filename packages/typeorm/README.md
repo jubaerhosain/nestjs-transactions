@@ -1,5 +1,10 @@
 # @nestjs-transactions/typeorm
 
+[![npm version](https://img.shields.io/npm/v/%40nestjs-transactions%2Ftypeorm)](https://www.npmjs.com/package/@nestjs-transactions/typeorm)
+[![npm downloads](https://img.shields.io/npm/dm/%40nestjs-transactions%2Ftypeorm)](https://www.npmjs.com/package/@nestjs-transactions/typeorm)
+[![CI](https://img.shields.io/github/actions/workflow/status/jubaerhosain/nestjs-transactions/ci.yml?branch=main&label=CI)](https://github.com/jubaerhosain/nestjs-transactions/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/%40nestjs-transactions%2Ftypeorm)](https://github.com/jubaerhosain/nestjs-transactions/blob/main/LICENSE)
+
 **Declarative `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. Inspired by [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) — a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
 📖 **[Full documentation → jubaerhosain.github.io/nestjs-transactions/docs/typeorm](https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm)**

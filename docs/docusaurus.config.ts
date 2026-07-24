@@ -99,6 +99,14 @@ const config: Config = {
           'nestjs, transactional, typeorm, prisma, transaction, cls, async-local-storage, typeorm-transactional, propagation',
       },
       { name: 'twitter:card', content: 'summary_large_image' },
+      { property: 'og:site_name', content: 'nestjs-transactions' },
+      { property: 'og:type', content: 'website' },
+      // Google Search Console ownership verification (URL-prefix property).
+      // static/googlebb31fc13daeeaa3d.html is the file-based fallback.
+      {
+        name: 'google-site-verification',
+        content: 'WDIso36CdjljXxyIDEqIiAvlCKWQWbyJoDtq2gPEmbk',
+      },
     ],
     colorMode: {
       respectPrefersColorScheme: true,

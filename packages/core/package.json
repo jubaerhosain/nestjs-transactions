@@ -10,10 +10,18 @@
     "directory": "packages/core"
   },
   "homepage": "https://jubaerhosain.github.io/nestjs-transactions/",
+  "bugs": {
+    "url": "https://github.com/jubaerhosain/nestjs-transactions/issues"
+  },
   "keywords": [
     "nestjs",
+    "nestjs-transactions",
+    "nestjs-cls",
     "transactional",
     "transaction",
+    "typeorm",
+    "prisma",
+    "propagation",
     "cls",
     "async-local-storage",
     "typeorm-transactional"
