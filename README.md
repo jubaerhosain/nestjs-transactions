@@ -33,7 +33,7 @@ Transaction management shouldn't leak into your code. You keep your `@InjectRepo
 | [`@nestjs-transactions/prisma`](./packages/prisma)   | Prisma — one transaction-aware client via `@InjectPrismaClient`                            |
 | [`@nestjs-transactions/core`](./packages/core)       | ORM-agnostic building blocks (installed automatically as a peer; you don't import from it) |
 
-Every adapter exposes the same surface — `TransactionalModule`, `Transactional`, `Propagation`, `TransactionHost`, and the `runOnTransactionCommit`/`Rollback`/`Complete` lifecycle hooks — from a single import.
+Every adapter exposes the same transactional surface — `Transactional`, `Propagation`, `TransactionHost`, and the `runOnTransactionCommit`/`Rollback`/`Complete` lifecycle hooks — from a single import. The TypeORM adapter's module is `NestjsTypeormModule`, a unified module that owns both the DataSource and transactions (use it instead of `@nestjs/typeorm`'s `TypeOrmModule`); the Prisma adapter's is `TransactionalModule`.
 
 ## Quick start (TypeORM)
 
@@ -43,17 +43,17 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 ```
 
 ```ts
-// app.module.ts
-import { TransactionalModule } from '@nestjs-transactions/typeorm';
+// app.module.ts — NestjsTypeormModule from THIS package, not @nestjs/typeorm
+import { NestjsTypeormModule } from '@nestjs-transactions/typeorm';
 
 @Module({
-  imports: [TypeOrmModule.forRoot({/* ... */}), TransactionalModule.forRoot()],
+  imports: [NestjsTypeormModule.forRoot({/* all @nestjs/typeorm options ... */})],
 })
 export class AppModule {}
 
-// member.module.ts — replaces TypeOrmModule.forFeature([Member])
+// member.module.ts — same shape as @nestjs/typeorm's forFeature
 @Module({
-  imports: [TransactionalModule.forFeature([Member])],
+  imports: [NestjsTypeormModule.forFeature([Member])],
   providers: [MemberService],
 })
 export class MemberModule {}

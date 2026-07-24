@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ClsPluginTransactional, NoOpTransactionalAdapter } from '@nestjs-cls/transactional';
+import {
+  ClsPluginTransactional,
+  NoOpTransactionalAdapter,
+  TransactionalAdapter,
+  TransactionHost,
+} from '@nestjs-cls/transactional';
 import { ClsModule } from 'nestjs-cls';
 import { Propagation, Transactional } from '../src';
 import { runOnTransactionCommit, runOnTransactionComplete, runOnTransactionRollback } from '../src';
@@ -310,6 +315,168 @@ describe('transaction hooks', () => {
       const adapter = new NoOpTransactionalAdapter({ tx: {}, disableWarning: true });
       applyTransactionHooks(adapter, 'a');
       expect(() => applyTransactionHooks(adapter, 'b')).toThrow(/already wrapped for connection/);
+    });
+
+    it("reports '(default)' when the adapter was first wrapped for the default connection", () => {
+      const adapter = new NoOpTransactionalAdapter({ tx: {}, disableWarning: true });
+      applyTransactionHooks(adapter);
+      expect(() => applyTransactionHooks(adapter, 'b')).toThrow(
+        "already wrapped for connection '(default)'; cannot re-wrap for 'b'",
+      );
+    });
+
+    it("reports '(default)' when re-wrapping a named adapter for the default connection", () => {
+      const adapter = new NoOpTransactionalAdapter({ tx: {}, disableWarning: true });
+      applyTransactionHooks(adapter, 'a');
+      expect(() => applyTransactionHooks(adapter)).toThrow(
+        "already wrapped for connection 'a'; cannot re-wrap for '(default)'",
+      );
+    });
+  });
+
+  // Savepoints: a NESTED inner block gets its own registry whose hooks fire on
+  // the savepoint's outcome. The NoOp adapter has no wrapWithNestedTransaction,
+  // so this needs an adapter that does (transaction-hooks.ts wraps it too).
+  describe('NESTED savepoint hooks (adapter with wrapWithNestedTransaction)', () => {
+    interface FakeTx {
+      id: number;
+    }
+
+    class SavepointFakeAdapter implements TransactionalAdapter<
+      unknown,
+      FakeTx,
+      { label?: string }
+    > {
+      connection = {};
+      private seq = 0;
+      readonly fallback: FakeTx = { id: 0 };
+      /** Enclosing tx ids the nested wrapper received — pins the arg passthrough. */
+      readonly nestedOuterTxIds: number[] = [];
+
+      optionsFactory = () => ({
+        wrapWithTransaction: async (
+          _options: { label?: string },
+          fn: (...args: any[]) => Promise<any>,
+          setTx: (tx?: FakeTx) => void,
+        ) => {
+          setTx({ id: ++this.seq });
+          return fn();
+        },
+        // A savepoint: derive the nested tx from the ENCLOSING one, like a real
+        // adapter (typeorm's wrapWithNestedTransaction calls client.transaction).
+        wrapWithNestedTransaction: async (
+          _options: { label?: string },
+          fn: (...args: any[]) => Promise<any>,
+          setTx: (tx?: FakeTx) => void,
+          tx: FakeTx,
+        ) => {
+          this.nestedOuterTxIds.push(tx.id);
+          setTx({ id: tx.id + 100 });
+          return fn();
+        },
+        getFallbackInstance: () => this.fallback,
+      });
+    }
+
+    @Injectable()
+    class SavepointService {
+      readonly events: string[] = [];
+      constructor(readonly txHost: TransactionHost<SavepointFakeAdapter>) {}
+
+      @Transactional(Propagation.NESTED)
+      async savepointCommit(): Promise<void> {
+        runOnTransactionCommit(() => {
+          this.events.push('nested-commit');
+        });
+        runOnTransactionComplete(() => {
+          this.events.push('nested-complete');
+        });
+      }
+
+      @Transactional(Propagation.NESTED)
+      async savepointRollback(): Promise<void> {
+        runOnTransactionRollback(() => {
+          this.events.push('nested-rollback');
+        });
+        runOnTransactionComplete(() => {
+          this.events.push('nested-complete');
+        });
+        throw new BoomError();
+      }
+
+      @Transactional()
+      async outerWithNestedSuccess(): Promise<{ before: number; after: number }> {
+        runOnTransactionCommit(() => {
+          this.events.push('outer-commit');
+        });
+        const before = this.txHost.tx.id;
+        await this.savepointCommit();
+        this.events.push('after-nested');
+        return { before, after: this.txHost.tx.id };
+      }
+
+      @Transactional()
+      async outerSurvivesNestedFailure(): Promise<void> {
+        runOnTransactionCommit(() => {
+          this.events.push('outer-commit');
+        });
+        await this.savepointRollback().catch(() => {
+          this.events.push('caught');
+        });
+      }
+    }
+
+    async function bootSavepoint() {
+      const adapter = new SavepointFakeAdapter();
+      applyTransactionHooks(adapter);
+      const moduleRef = await Test.createTestingModule({
+        imports: [ClsModule.registerPlugins([new ClsPluginTransactional({ adapter })])],
+        providers: [SavepointService],
+      }).compile();
+      return { moduleRef, service: moduleRef.get(SavepointService), adapter };
+    }
+
+    it("fires the savepoint's own hooks on release, before the outer commit hooks", async () => {
+      const { moduleRef, service } = await bootSavepoint();
+
+      await service.outerWithNestedSuccess();
+
+      expect(service.events).toEqual([
+        'nested-commit',
+        'nested-complete',
+        'after-nested',
+        'outer-commit',
+      ]);
+      await moduleRef.close();
+    });
+
+    it('fires rollback hooks on a failed savepoint while the outer transaction still commits', async () => {
+      const { moduleRef, service } = await bootSavepoint();
+
+      await service.outerSurvivesNestedFailure();
+
+      expect(service.events).toEqual([
+        'nested-rollback',
+        'nested-complete',
+        'caught',
+        'outer-commit',
+      ]);
+      await moduleRef.close();
+    });
+
+    it('does not clear the tx instance when a savepoint settles, and forwards the enclosing tx', async () => {
+      const { moduleRef, service, adapter } = await bootSavepoint();
+
+      const { before, after } = await service.outerWithNestedSuccess();
+
+      // The savepoint shares the enclosing transaction's (still-open) query
+      // runner: after it settles, the outer method still sees ITS transaction,
+      // not the fallback instance.
+      expect(before).toBeGreaterThan(0);
+      expect(after).toBe(before);
+      // The hook wrapper passed the enclosing tx through to the adapter.
+      expect(adapter.nestedOuterTxIds).toEqual([before]);
+      await moduleRef.close();
     });
   });
 });

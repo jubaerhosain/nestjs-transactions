@@ -51,7 +51,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest",
-    "test:unit": "jest"
+    "test:unit": "jest",
+    "test:cov": "jest --coverage"
   },
   "peerDependencies": {
     "@nestjs-cls/transactional": "^3.2.0",
@@ -72,7 +73,7 @@
     "nestjs-cls": "^6.2.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "ts-jest": "^29.4.11",
+    "ts-jest": "^29.4.12",
     "typescript": "^5.9.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@nestjs-transactions/typeorm",
-  "version": "4.0.4",
+  "version": "5.0.0",
   "description": "Declarative @Transactional() for NestJS + TypeORM: keep @InjectRepository, drop the boilerplate. Drop-in replacement DX for typeorm-transactional without monkey-patching.",
   "license": "MIT",
   "author": "Jubaer Hosain",
@@ -54,6 +54,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest",
     "test:unit": "jest",
+    "test:cov": "jest --coverage",
     "test:int": "jest --config jest.integration.config.js --runInBand"
   },
   "peerDependencies": {
@@ -81,7 +82,7 @@
     "pg": "^8.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "ts-jest": "^29.4.11",
+    "ts-jest": "^29.4.12",
     "typeorm": "^0.3.31",
     "typescript": "^5.9.3"
   }
