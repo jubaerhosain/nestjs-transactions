@@ -22,20 +22,8 @@ export function provideTransactionAwareRepository(
   const { connectionName, dataSource } = resolveConnection(connection);
   return {
     provide: getRepositoryToken(entity, dataSource),
-    // Optional so a missing transactional connection reaches OUR error below
-    // (a guided message) instead of Nest's generic can't-resolve-dependencies.
-    inject: [{ token: getTransactionHostToken(connectionName), optional: true }],
-    useFactory: (txHost: TransactionHost<TransactionalAdapterTypeOrm> | undefined) => {
-      if (!txHost) {
-        const name = connectionName ?? 'default';
-        throw new Error(
-          `No transactional connection '${name}' is registered, but TypeOrmModule.forFeature ` +
-            `from '@nestjs-transactions/typeorm' wired a repository for entity ${entityName(entity)} to it. ` +
-            `Most likely TypeOrmModule.forRoot() was imported from '@nestjs/typeorm' instead of ` +
-            `'@nestjs-transactions/typeorm' — always import TypeOrmModule from '@nestjs-transactions/typeorm'. ` +
-            `(For a named connection, also check that forRoot({ name: '${name}' }) is registered.)`,
-        );
-      }
+    inject: [getTransactionHostToken(connectionName)],
+    useFactory: (txHost: TransactionHost<TransactionalAdapterTypeOrm>) => {
       // Tree-vs-plain is static after DataSource init — decide once, not per access.
       let isTree: boolean | undefined;
       return createTransactionAwareProxy(() => {
@@ -68,7 +56,7 @@ export function provideTransactionAwareRepository(
 
 /**
  * Build the providers + export tokens for a set of entities. Shared by
- * `TypeOrmModule.forFeature` and the testing module so both always wire
+ * `NestjsTypeormModule.forFeature` and the testing module so both always wire
  * repositories identically.
  */
 export function buildFeatureProviders(

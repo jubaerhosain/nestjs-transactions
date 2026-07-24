@@ -1,4 +1,4 @@
-import { createTransactionAwareProxy, TRANSACTION_AWARE } from '../src/transaction-aware-proxy';
+import { createTransactionAwareProxy } from '../src/transaction-aware-proxy';
 
 class Repo {
   constructor(
@@ -46,32 +46,6 @@ describe('createTransactionAwareProxy', () => {
   it('throws a descriptive error when resolve returns undefined', () => {
     const proxy = createTransactionAwareProxy<Repo>(() => undefined as unknown as Repo);
     expect(() => proxy.label).toThrow(/could not resolve its target/);
-  });
-
-  describe('TRANSACTION_AWARE marker', () => {
-    it('reads true WITHOUT resolving the target', () => {
-      const resolve = jest.fn(() => new Repo('r'));
-      const proxy = createTransactionAwareProxy(resolve);
-
-      expect((proxy as unknown as Record<symbol, unknown>)[TRANSACTION_AWARE]).toBe(true);
-      expect(TRANSACTION_AWARE in proxy).toBe(true);
-      expect(resolve).not.toHaveBeenCalled();
-    });
-
-    it('reads true even when resolve would throw', () => {
-      const proxy = createTransactionAwareProxy<Repo>(() => {
-        throw new Error('no connection yet');
-      });
-      expect((proxy as unknown as Record<symbol, unknown>)[TRANSACTION_AWARE]).toBe(true);
-    });
-
-    it('is absent from plain objects and not enumerated on the proxy', () => {
-      const plain = new Repo('r');
-      expect((plain as unknown as Record<symbol, unknown>)[TRANSACTION_AWARE]).toBeUndefined();
-
-      const proxy = createTransactionAwareProxy(() => plain);
-      expect(Reflect.ownKeys(proxy)).not.toContain(TRANSACTION_AWARE);
-    });
   });
 
   it('keeps method identity stable while the resolved instance is unchanged', () => {

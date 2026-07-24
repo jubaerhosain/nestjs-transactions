@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule as NestTypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule, ClsService } from 'nestjs-cls';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   InjectRepository,
+  NestjsTypeormModule,
   Transactional,
   TransactionHost,
   TypeOrmAdapter,
-  TypeOrmModule,
 } from '../../src';
 import { TransactionalRepository } from '../../src/transactional.repository';
 import { Member, PG_A } from './fixtures';
@@ -59,8 +58,8 @@ describe('coexistence with a host app that owns ClsModule.forRoot (real Postgres
     moduleRef = await Test.createTestingModule({
       imports: [
         ClsModule.forRoot({ global: true }),
-        TypeOrmModule.forRoot(PG_A),
-        TypeOrmModule.forFeature([Member]),
+        NestjsTypeormModule.forRoot(PG_A),
+        NestjsTypeormModule.forFeature([Member]),
       ],
       providers: [TenantService, MemberRepository],
     }).compile();
@@ -88,36 +87,5 @@ describe('coexistence with a host app that owns ClsModule.forRoot (real Postgres
 
     await service.repo.save({ name: 'm2' });
     await expect(service.customRepo.findByName('m2')).resolves.toMatchObject({ name: 'm2' });
-  });
-});
-
-describe("mistaken import: forRoot from '@nestjs/typeorm' + our forFeature (real Postgres)", () => {
-  it('aborts bootstrap with a guided error instead of a generic DI failure', async () => {
-    let leaked: DataSource | undefined;
-    await expect(
-      Test.createTestingModule({
-        // The wrong forRoot registers the DataSource but NO transactional
-        // connection. (forRootAsync only so dataSourceFactory can capture the
-        // DataSource instance for cleanup — forRoot behaves identically.)
-        imports: [
-          NestTypeOrmModule.forRootAsync({
-            useFactory: () => PG_A,
-            dataSourceFactory: async (options) => (leaked = new DataSource(options!)),
-          }),
-          TypeOrmModule.forFeature([Member]),
-        ],
-      }).compile(),
-    ).rejects.toThrow(
-      /imported from '@nestjs\/typeorm' instead of\s+'@nestjs-transactions\/typeorm'/,
-    );
-
-    // The DataSource may still be connecting when compile() rejects — wait for
-    // it to settle, then destroy it, or the leaked pool keeps jest alive.
-    for (let i = 0; i < 40 && leaked && !leaked.isInitialized; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    if (leaked?.isInitialized) {
-      await leaked.destroy();
-    }
   });
 });

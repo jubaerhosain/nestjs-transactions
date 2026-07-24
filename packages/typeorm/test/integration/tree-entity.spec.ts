@@ -9,7 +9,7 @@ import {
   TreeParent,
   TreeRepository,
 } from 'typeorm';
-import { InjectRepository, Transactional, TypeOrmModule } from '../../src';
+import { InjectRepository, Transactional, NestjsTypeormModule } from '../../src';
 import { PG_A } from './fixtures';
 
 @Entity()
@@ -56,8 +56,8 @@ describe('tree entities resolve TreeRepository through forFeature (real Postgres
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({ ...PG_A, entities: [Category] }),
-        TypeOrmModule.forFeature([Category]),
+        NestjsTypeormModule.forRoot({ ...PG_A, entities: [Category] }),
+        NestjsTypeormModule.forFeature([Category]),
       ],
       providers: [CategoryService],
     }).compile();

@@ -10,7 +10,7 @@ import {
   Transactional,
   TransactionalAdapterTypeOrm,
   TransactionHost,
-  TypeOrmModule,
+  NestjsTypeormModule,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
 
@@ -181,7 +181,7 @@ describe('transaction hooks (real Postgres)', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [TypeOrmModule.forRoot(PG_A), TypeOrmModule.forFeature([Member])],
+      imports: [NestjsTypeormModule.forRoot(PG_A), NestjsTypeormModule.forFeature([Member])],
       providers: [HookService],
     }).compile();
     await moduleRef.init();
@@ -324,10 +324,10 @@ describe('transaction hooks across two connections (real Postgres)', () => {
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot(PG_A),
-        TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TypeOrmModule.forFeature([Member]),
-        TypeOrmModule.forFeature([Stat], 'stats'),
+        NestjsTypeormModule.forRoot(PG_A),
+        NestjsTypeormModule.forRoot({ ...PG_B, name: 'stats' }),
+        NestjsTypeormModule.forFeature([Member]),
+        NestjsTypeormModule.forFeature([Stat], 'stats'),
       ],
       providers: [CrossConnectionHookService],
     }).compile();

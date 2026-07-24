@@ -7,7 +7,7 @@ import {
   IsolationLevel,
   Transactional,
   TransactionalAdapterTypeOrm,
-  TypeOrmModule,
+  NestjsTypeormModule,
 } from '../../src';
 import type { Transaction } from '../../src';
 import { Member, PG_A } from './fixtures';
@@ -36,7 +36,7 @@ class IsolationProbe {
 
 async function bootWith(root: DynamicModule) {
   const moduleRef = await Test.createTestingModule({
-    imports: [root, TypeOrmModule.forFeature([Member])],
+    imports: [root, NestjsTypeormModule.forFeature([Member])],
     providers: [IsolationProbe],
   }).compile();
   await moduleRef.init();
@@ -50,7 +50,7 @@ describe('forRoot options (real Postgres)', () => {
 
   it('applies defaultTxOptions from forRoot to every transaction', async () => {
     moduleRef = await bootWith(
-      TypeOrmModule.forRoot({
+      NestjsTypeormModule.forRoot({
         ...PG_A,
         defaultTxOptions: { isolationLevel: IsolationLevel.SERIALIZABLE },
       }),
@@ -62,7 +62,7 @@ describe('forRoot options (real Postgres)', () => {
   it('applies options resolved asynchronously via forRootAsync — factory runs ONCE', async () => {
     let factoryCalls = 0;
     moduleRef = await bootWith(
-      TypeOrmModule.forRootAsync({
+      NestjsTypeormModule.forRootAsync({
         useFactory: async () => {
           factoryCalls += 1;
           return {
@@ -81,7 +81,7 @@ describe('forRoot options (real Postgres)', () => {
 
   it('lets per-call @Transactional options override defaultTxOptions', async () => {
     moduleRef = await bootWith(
-      TypeOrmModule.forRoot({
+      NestjsTypeormModule.forRoot({
         ...PG_A,
         defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
       }),
@@ -96,7 +96,7 @@ describe('forRoot options (real Postgres)', () => {
   // defaultTxOptions when app B's factory resolved none.
   it('does not leak async defaultTxOptions across app compiles of one module', async () => {
     let txOptions: object | undefined = { isolationLevel: IsolationLevel.SERIALIZABLE };
-    const sharedModule = TypeOrmModule.forRootAsync({
+    const sharedModule = NestjsTypeormModule.forRootAsync({
       useFactory: async () => ({ ...PG_A, defaultTxOptions: txOptions as any }),
     });
 
@@ -141,8 +141,8 @@ describe('forRoot({ enableTransactionProxy: true }) + @InjectTransaction (real P
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({ ...PG_A, enableTransactionProxy: true }),
-        TypeOrmModule.forFeature([Member]),
+        NestjsTypeormModule.forRoot({ ...PG_A, enableTransactionProxy: true }),
+        NestjsTypeormModule.forFeature([Member]),
       ],
       providers: [TxProbe],
     }).compile();

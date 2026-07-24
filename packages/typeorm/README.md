@@ -13,15 +13,16 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 
 ## Quick start
 
-Import `TypeOrmModule` from **this package instead of `@nestjs/typeorm`** — one
-module owns both the database connection and transaction propagation:
+Use `NestjsTypeormModule` from **this package instead of `@nestjs/typeorm`'s
+`TypeOrmModule`** — one module owns both the database connection and transaction
+propagation:
 
 ```ts
 // app.module.ts
-import { TypeOrmModule } from '@nestjs-transactions/typeorm';
+import { NestjsTypeormModule } from '@nestjs-transactions/typeorm';
 
 @Module({
-  imports: [TypeOrmModule.forRoot({/* all @nestjs/typeorm options ... */})],
+  imports: [NestjsTypeormModule.forRoot({/* all @nestjs/typeorm options ... */})],
 })
 export class AppModule {}
 ```
@@ -37,7 +38,7 @@ export class AppModule {}
 ```ts
 // member.module.ts — same shape as @nestjs/typeorm's forFeature
 @Module({
-  imports: [TypeOrmModule.forFeature([Member])],
+  imports: [NestjsTypeormModule.forFeature([Member])],
   providers: [MemberService, AccountingService],
 })
 export class MemberModule {}
@@ -95,9 +96,9 @@ Use the `IsolationLevel` enum for autocomplete and typo-free values (its members
 TypeORM's isolation-level literals, so a raw string still works too):
 
 ```ts
-import { IsolationLevel, Transactional, TypeOrmModule } from '@nestjs-transactions/typeorm';
+import { IsolationLevel, NestjsTypeormModule, Transactional } from '@nestjs-transactions/typeorm';
 
-TypeOrmModule.forRoot({
+NestjsTypeormModule.forRoot({
   /* ...database options... */
   defaultTxOptions: { isolationLevel: IsolationLevel.REPEATABLE_READ },
 });
@@ -107,7 +108,7 @@ TypeOrmModule.forRoot({
 
 // resolved async (e.g. from ConfigService) — the factory returns the combined
 // options (database + defaultTxOptions) and runs exactly once:
-TypeOrmModule.forRootAsync({
+NestjsTypeormModule.forRootAsync({
   inject: [ConfigService],
   useFactory: (config: ConfigService) => ({
     url: config.get('DATABASE_URL'),
@@ -126,11 +127,11 @@ module-definition time.
 `name` names both the DataSource and the transactional connection:
 
 ```ts
-TypeOrmModule.forRoot(mainDbConfig),                       // default DataSource
-TypeOrmModule.forRoot({ ...statsDbConfig, name: 'stats' }), // the 'stats' DataSource
+NestjsTypeormModule.forRoot(mainDbConfig),                       // default DataSource
+NestjsTypeormModule.forRoot({ ...statsDbConfig, name: 'stats' }), // the 'stats' DataSource
 
-TypeOrmModule.forFeature([Member]),
-TypeOrmModule.forFeature([Stat], 'stats'),
+NestjsTypeormModule.forFeature([Member]),
+NestjsTypeormModule.forFeature([Stat], 'stats'),
 ```
 
 ```ts
@@ -139,9 +140,10 @@ async recordStats() { /* wraps only the stats DataSource */ }
 ```
 
 For `forFeature`, the object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are
-equivalent to the string form — each side defaults to the other. If the connection name must differ
-from the data source name, pass both explicitly:
-`TypeOrmModule.forFeature([Stat], { connectionName: 'stats', dataSource: 'statsDb' })`.
+equivalent to the string form — each side defaults to the other. With the unified module the two
+never differ: `forRoot({ name })` always names the transactional connection after the DataSource.
+(A split combination only makes sense in advanced hand-wired setups built on
+`provideTransactionAwareRepository`.)
 
 ## Transaction hooks
 
@@ -251,39 +253,21 @@ const moduleRef = await Test.createTestingModule({
 
 If you're used to marking methods `@Transactional()` and letting your repositories run inside the transaction, the setup here is deliberately small:
 
-- Change the `TypeOrmModule` import line to this package — `forRoot`/`forFeature` keep their `@nestjs/typeorm` shape (no global bootstrap call before startup, no manual data-source registration).
+- Swap `@nestjs/typeorm`'s `TypeOrmModule` for this package's `NestjsTypeormModule` — `forRoot`/`forFeature` keep their `@nestjs/typeorm` shape (no global bootstrap call before startup, no manual data-source registration).
 - Keep your services exactly as they are: `@InjectRepository(Entity)` plus `@Transactional({ ... })`, with the same options-object syntax for `Propagation`, `IsolationLevel`, and the lifecycle hooks.
 
 ## Migrating from v4 (`TransactionalModule`)
 
-v5 merges the two-module setup into the single `TypeOrmModule`:
+v5 merges the two-module setup into the single `NestjsTypeormModule`:
 
-- Replace `import { TypeOrmModule } from '@nestjs/typeorm'` + `import { TransactionalModule } from '@nestjs-transactions/typeorm'` with a single `import { TypeOrmModule } from '@nestjs-transactions/typeorm'`.
-- Delete the `TransactionalModule.forRoot(...)` lines; move `defaultTxOptions` / `enableTransactionProxy` into `TypeOrmModule.forRoot({ ...dbOptions, ... })`. `name` now also names the transactional connection (`connectionName` is gone from the root options).
-- Rename `TransactionalModule.forFeature(...)` to `TypeOrmModule.forFeature(...)` — same signature.
+- Replace `import { TypeOrmModule } from '@nestjs/typeorm'` + `import { TransactionalModule } from '@nestjs-transactions/typeorm'` with a single `import { NestjsTypeormModule } from '@nestjs-transactions/typeorm'`.
+- Delete the `TransactionalModule.forRoot(...)` lines; move `defaultTxOptions` / `enableTransactionProxy` into `NestjsTypeormModule.forRoot({ ...dbOptions, ... })`. `name` now also names the transactional connection (`connectionName` is gone from the root options).
+- Rename both `TypeOrmModule.forFeature(...)` and `TransactionalModule.forFeature(...)` to `NestjsTypeormModule.forFeature(...)` — same signature.
 - Attaching to an externally managed DataSource (`TransactionalModule.forRoot({ dataSource, imports })`) is no longer part of the public surface — `forRoot` always owns the DataSource.
 
 ## Caveats
 
-- **Use this package's `TypeOrmModule` instead of `@nestjs/typeorm`'s, never both.** In particular, don't register the same entity with both packages' `forFeature` in the same module — they claim the same token; the last registration wins.
-
-  Both mix-up directions are caught at startup: `@nestjs/typeorm`'s `forRoot` + our `forFeature` aborts with a guided error (no transactional connection is registered), and the reverse — our `forRoot` + their `forFeature`, which would otherwise **boot fine while the plain repositories silently bypass `@Transactional()`** — fails the boot too: every connection runs a repository-conflict check that detects un-proxied `Repository` providers on its DataSource and throws, naming the entities. Tune it per connection with `repositoryConflictCheck` in `forRoot`/`forRootAsync` (static): `'error'` (default), `'warn'` (log and continue), or `'off'` (e.g. when intentionally keeping non-transactional raw-repository providers).
-
-  As defense-in-depth, also guard the import at the source with ESLint — it catches the mistake at lint time and covers the one runtime blind spot (the same entity registered with **both** packages' `forFeature` on one connection, where our proxy legitimately claims the token):
-
-  ```js
-  // eslint.config — make the wrong import impossible to write
-  'no-restricted-imports': ['error', {
-    paths: [{
-      name: '@nestjs/typeorm',
-      importNames: ['TypeOrmModule'],
-      message: "Import TypeOrmModule from '@nestjs-transactions/typeorm' instead — @nestjs/typeorm's module bypasses @Transactional().",
-    }],
-  }],
-  ```
-
-  (Other `@nestjs/typeorm` imports stay fine — `InjectRepository` etc. are the same symbols either way, and this package re-exports them.)
-
+- **Register the DataSource with `NestjsTypeormModule`, and repositories with `NestjsTypeormModule.forFeature`.** Repositories registered instead with `@nestjs/typeorm`'s `TypeOrmModule.forFeature` (or hand-rolled `Repository` providers) are plain repositories bound to the base `EntityManager` — they **bypass `@Transactional()`** and their writes escape rollback. Keep both on this package's module, and don't register the same entity with both packages' `forFeature` in one module (they claim the same token; the last registration wins). For custom repository classes, extend `TransactionalRepository` (above) rather than `Repository`.
 - **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `RequiresNew` for genuine parallelism.
 - **`repo.extend()`** can't be intercepted — use `TransactionalRepository` (above).
 - If your app already uses `nestjs-cls` (`ClsModule.forRoot`), everything just works: this package only registers a CLS _plugin_ and never calls `ClsModule.forRoot()` itself.

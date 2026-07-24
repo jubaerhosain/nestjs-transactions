@@ -26,7 +26,7 @@ export type {
   TransactionalModuleDefinition,
   TransactionalRootOptionsBase,
 } from './interfaces';
-export { createTransactionAwareProxy, TRANSACTION_AWARE } from './transaction-aware-proxy';
+export { createTransactionAwareProxy } from './transaction-aware-proxy';
 
 // Transaction lifecycle hooks (typeorm-transactional parity)
 export {

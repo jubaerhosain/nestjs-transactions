@@ -9,7 +9,7 @@ import {
   Transactional,
   TransactionalAdapterTypeOrm,
   TransactionHost,
-  TypeOrmModule,
+  NestjsTypeormModule,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
 
@@ -74,10 +74,10 @@ describe('multiple data sources (real Postgres, two databases)', () => {
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot(PG_A),
-        TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TypeOrmModule.forFeature([Member]),
-        TypeOrmModule.forFeature([Stat], 'stats'),
+        NestjsTypeormModule.forRoot(PG_A),
+        NestjsTypeormModule.forRoot({ ...PG_B, name: 'stats' }),
+        NestjsTypeormModule.forFeature([Member]),
+        NestjsTypeormModule.forFeature([Stat], 'stats'),
       ],
       providers: [ReportingService],
     }).compile();
@@ -149,8 +149,8 @@ describe('forFeature with object-form dataSource-only options (real Postgres)', 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TypeOrmModule.forFeature([Stat], { dataSource: 'stats' }),
+        NestjsTypeormModule.forRoot({ ...PG_B, name: 'stats' }),
+        NestjsTypeormModule.forFeature([Stat], { dataSource: 'stats' }),
       ],
       providers: [StatsService],
     }).compile();

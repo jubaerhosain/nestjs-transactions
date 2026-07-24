@@ -27,18 +27,19 @@ pnpm workspace (`pnpm-workspace.yaml` → `packages/*`).
 and error classes from `@nestjs-cls/transactional`, and every adapter re-exports
 them from `core`. Never redefine these symbols in an adapter — always re-export,
 so `@Transactional`, `TransactionHost`, `Propagation`, etc. share one identity
-across all packages. **Two deliberate exceptions**, both in the `typeorm`
-adapter: (1) it wraps `@nestjs-cls`'s `Transactional` in its own object-form
-facade (a single-object API that resolves the positional-argument ambiguity) —
-the `prisma` adapter follows the same facade pattern; (2) it exports its own
-`TypeOrmModule` class that deliberately _shadows the name_ of
-`@nestjs/typeorm`'s module — a facade that owns both the DataSource (delegating
-to `@nestjs/typeorm` internally) and transaction propagation, so end users
-import ONE module instead of two (this applies to typeorm only; prisma's module
-stays `TransactionalModule`). See `packages/typeorm/CLAUDE.md`. The
-`@nestjs/typeorm` helpers the typeorm package re-exports (`InjectRepository`,
-tokens, …) remain identity re-exports. All other symbols — including core's own
-`Transactional` — remain plain re-exports.
+across all packages. **One deliberate exception:** the `typeorm` adapter wraps
+`@nestjs-cls`'s `Transactional` in its own object-form facade (a single-object
+API that resolves the positional-argument ambiguity); the `prisma` adapter
+follows the same facade pattern. See `packages/typeorm/CLAUDE.md`.
+
+The `typeorm` adapter also exports its own unified `NestjsTypeormModule` — a
+distinctly-named module (NOT shadowing `@nestjs/typeorm`'s `TypeOrmModule`) that
+owns both the DataSource (delegating to `@nestjs/typeorm` internally) and
+transaction propagation, so end users import ONE module instead of two (typeorm
+only; prisma's module stays `TransactionalModule`). The `@nestjs/typeorm`
+helpers the typeorm package re-exports (`InjectRepository`, tokens, …) remain
+identity re-exports. All other symbols — including core's own `Transactional` —
+remain plain re-exports.
 
 ## Commands
 

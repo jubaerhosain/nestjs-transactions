@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
-import { InjectRepository, Transactional, TypeOrmModule } from '../../src';
+import { InjectRepository, Transactional, NestjsTypeormModule } from '../../src';
 import { Member, PG_A } from './fixtures';
 
 @Injectable()
@@ -22,15 +22,15 @@ class MemberService {
 // 2. `@InjectRepository` resolves OUR transaction-aware provider, not the
 //    plain one @nestjs/typeorm registers under the same token (provider
 //    shadowing) — a plain repository would ignore the rollback.
-describe('autoLoadEntities with the unified TypeOrmModule (real Postgres)', () => {
+describe('autoLoadEntities with the unified NestjsTypeormModule (real Postgres)', () => {
   let moduleRef: TestingModule;
   let service: MemberService;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({ ...PG_A, entities: [], autoLoadEntities: true }),
-        TypeOrmModule.forFeature([Member]),
+        NestjsTypeormModule.forRoot({ ...PG_A, entities: [], autoLoadEntities: true }),
+        NestjsTypeormModule.forFeature([Member]),
       ],
       providers: [MemberService],
     }).compile();

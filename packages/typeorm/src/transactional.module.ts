@@ -64,9 +64,9 @@ const TransactionalModuleBase = createTransactionalModule<
 
 /**
  * INTERNAL — the transaction-propagation half of the public unified
- * `TypeOrmModule` (`src/typeorm.module.ts`), which composes this module with
- * `@nestjs/typeorm`'s. Not exported from the package; it wires the CLS
- * transactional plugin against an already-registered DataSource token.
+ * `NestjsTypeormModule` (`src/nestjs-typeorm.module.ts`), which composes this
+ * module with `@nestjs/typeorm`'s. Not exported from the package; it wires the
+ * CLS transactional plugin against an already-registered DataSource token.
  */
 export class TransactionalModule extends TransactionalModuleBase {
   static override forRoot(options: TypeOrmTransactionalOptions = {}): DynamicModule {

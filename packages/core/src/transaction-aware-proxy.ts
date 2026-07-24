@@ -1,15 +1,4 @@
 /**
- * Adapter-SPI marker: reading this well-known symbol on a proxy produced by
- * {@link createTransactionAwareProxy} returns `true` WITHOUT resolving the
- * proxy's target (safe at any time, even before the underlying connection
- * exists). On any other object the lookup yields `undefined`. Lets adapters
- * distinguish transaction-aware providers from plain ORM instances registered
- * under the same DI token (e.g. the typeorm adapter's mixed-import check).
- * `Symbol.for` so the marker survives duplicated copies of this package.
- */
-export const TRANSACTION_AWARE = Symbol.for('nestjs-transactions:transaction-aware');
-
-/**
  * Wrap an object in a Proxy that re-resolves its target on every property
  * access. Combined with `TransactionHost#tx` — which returns the transactional
  * client inside a transaction and the regular one outside — this is what makes
@@ -47,10 +36,6 @@ export function createTransactionAwareProxy<T extends object>(resolve: () => T):
 
   return new Proxy({} as T, {
     get(_target, prop, receiver) {
-      // Marker first — must never trigger target resolution.
-      if (prop === TRANSACTION_AWARE) {
-        return true;
-      }
       const override = overrides.get(prop);
       if (override) {
         return 'get' in override || 'set' in override
@@ -87,9 +72,6 @@ export function createTransactionAwareProxy<T extends object>(resolve: () => T):
       return true;
     },
     has(_target, prop) {
-      if (prop === TRANSACTION_AWARE) {
-        return true;
-      }
       return overrides.has(prop) || prop in resolveOrThrow();
     },
     ownKeys() {

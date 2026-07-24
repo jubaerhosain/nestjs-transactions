@@ -25,15 +25,15 @@ export {
 export { Transactional } from './transactional';
 export type { TransactionalOptions } from './transactional';
 
-// The module: forRoot / forRootAsync / forFeature. A drop-in replacement for
-// @nestjs/typeorm's TypeOrmModule that also owns transaction propagation —
-// use it INSTEAD of (never alongside) the @nestjs/typeorm module.
-export { TypeOrmModule } from './typeorm.module';
+// The module: forRoot / forRootAsync / forFeature. A unified module that owns
+// both the DataSource and transaction propagation — use it INSTEAD of
+// @nestjs/typeorm's TypeOrmModule.
+export { NestjsTypeormModule } from './nestjs-typeorm.module';
 export type {
   DataSourceRef,
   ForFeatureConnection,
-  TypeOrmRootAsyncOptions,
-  TypeOrmRootOptions,
+  NestjsTypeormRootAsyncOptions,
+  NestjsTypeormRootOptions,
 } from './interfaces';
 
 // @nestjs/typeorm essentials re-exported (same symbol identity), so apps need

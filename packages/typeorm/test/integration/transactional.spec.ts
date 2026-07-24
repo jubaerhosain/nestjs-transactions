@@ -10,7 +10,7 @@ import {
   TransactionAlreadyActiveError,
   TransactionHost,
   TransactionNotActiveError,
-  TypeOrmModule,
+  NestjsTypeormModule,
 } from '../../src';
 import { Member, PG_A } from './fixtures';
 
@@ -148,7 +148,7 @@ describe('@Transactional with silent repositories (real Postgres)', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [TypeOrmModule.forRoot(PG_A), TypeOrmModule.forFeature([Member])],
+      imports: [NestjsTypeormModule.forRoot(PG_A), NestjsTypeormModule.forFeature([Member])],
       providers: [MemberService, OtherService],
     }).compile();
     await moduleRef.init();
