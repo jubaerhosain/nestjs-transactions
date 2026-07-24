@@ -7,16 +7,15 @@ sidebar_label: Multiple data sources
 
 # Multiple data sources
 
-Name the connection after the data source (the convention — both default to each
-other):
+`name` names both the `DataSource` and the transactional connection — one
+`forRoot()` per data source:
 
 ```ts
-TypeOrmModule.forRoot({ ...statsDbConfig, name: 'stats' }),
-TransactionalModule.forRoot(),                            // default DataSource
-TransactionalModule.forRoot({ connectionName: 'stats' }), // the 'stats' DataSource
+NestjsTypeormModule.forRoot(mainDbConfig),                        // default DataSource
+NestjsTypeormModule.forRoot({ ...statsDbConfig, name: 'stats' }), // the 'stats' DataSource
 
-TransactionalModule.forFeature([Member]),
-TransactionalModule.forFeature([Stat], 'stats'),
+NestjsTypeormModule.forFeature([Member]),
+NestjsTypeormModule.forFeature([Stat], 'stats'),
 ```
 
 ```ts
@@ -26,11 +25,11 @@ async recordStats() {
 }
 ```
 
-For `forFeature`, the object forms `{ connectionName: 'stats' }` and
-`{ dataSource: 'stats' }` are equivalent to the string form — each side defaults
-to the other. If the connection name must differ from the data source name, pass
-both explicitly:
-
-```ts
-TransactionalModule.forFeature([Stat], { connectionName: 'stats', dataSource: 'statsDb' });
-```
+For `forFeature`, the string form and the single-key object forms
+`{ connectionName: 'stats' }` / `{ dataSource: 'stats' }` are all equivalent —
+each side defaults to the other. The unified module always names the
+transactional connection after the `DataSource` (`forRoot({ name })` sets
+both), so a **split** `{ connectionName, dataSource }` whose two names differ
+is not supported here — `forFeature` rejects it at startup with a guided error.
+That combination only applies to advanced hand-wired setups built on
+`provideTransactionAwareRepository`.

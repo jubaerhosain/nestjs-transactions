@@ -54,10 +54,11 @@ the repository quietly runs on the active transaction — no `EntityManager` or
 | [`@nestjs-transactions/prisma`](./prisma/index.md)       | Prisma — one transaction-aware client via `@InjectPrismaClient`                            |
 | [`@nestjs-transactions/core`](./core/adapter-authors.md) | ORM-agnostic building blocks (installed automatically as a peer; you don't import from it) |
 
-Every adapter exposes the same surface — `TransactionalModule`, `Transactional`,
-`Propagation`, `TransactionHost`, and the
-`runOnTransactionCommit`/`Rollback`/`Complete` lifecycle hooks — from a single
-import.
+Every adapter exposes the same surface — `Transactional`, `Propagation`,
+`TransactionHost`, and the `runOnTransactionCommit`/`Rollback`/`Complete`
+lifecycle hooks — from a single import. Each ships one module to wire it up:
+the TypeORM adapter's unified `NestjsTypeormModule` (which also owns the
+database connection), and the Prisma adapter's `TransactionalModule`.
 
 ## Next steps
 

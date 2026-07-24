@@ -29,36 +29,32 @@ npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
 
 ## Quick start
 
+Use `NestjsTypeormModule` from **this package instead of `@nestjs/typeorm`'s
+`TypeOrmModule`** — one unified module owns both the database connection and
+transaction propagation:
+
 ```ts
 // app.module.ts
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { TransactionalModule } from '@nestjs-transactions/typeorm';
+import { NestjsTypeormModule } from '@nestjs-transactions/typeorm';
 
 @Module({
-  imports: [TypeOrmModule.forRoot({/* ... */}), TransactionalModule.forRoot()],
+  imports: [NestjsTypeormModule.forRoot({/* all @nestjs/typeorm options ... */})],
 })
 export class AppModule {}
 ```
 
-Both root imports are required and do different jobs:
-
-- **`TypeOrmModule.forRoot()`** (from `@nestjs/typeorm`) owns the **database
-  connection** — the `DataSource`, pool, and entity metadata. Standard NestJS +
-  TypeORM; nothing here is specific to this package.
-- **`TransactionalModule.forRoot()`** owns **transaction propagation** — it
-  registers the `@nestjs-cls/transactional` CLS plugin that powers
-  `@Transactional()` (starting/committing/rolling back transactions and swapping
-  the active `EntityManager`). It does **not** create a connection; it resolves
-  the `DataSource` that `TypeOrmModule` registered.
-
-Neither replaces the other: with only `TypeOrmModule`, `@Transactional()` does
-nothing; with only `TransactionalModule`, there is no `DataSource` to run
-transactions against. Register both once at the app root.
+`forRoot()` accepts everything `@nestjs/typeorm`'s does (`autoLoadEntities`,
+`retryAttempts`, `name`, …) — it delegates `DataSource` creation to
+`@nestjs/typeorm` internally — plus the transactional options
+`defaultTxOptions` and `enableTransactionProxy`. It also registers the
+`@nestjs-cls/transactional` CLS plugin that powers `@Transactional()`
+(starting/committing/rolling back transactions and swapping the active
+`EntityManager`).
 
 ```ts
-// member.module.ts — use INSTEAD of TypeOrmModule.forFeature([Member])
+// member.module.ts — same shape as @nestjs/typeorm's forFeature
 @Module({
-  imports: [TransactionalModule.forFeature([Member])],
+  imports: [NestjsTypeormModule.forFeature([Member])],
   providers: [MemberService, AccountingService],
 })
 export class MemberModule {}
@@ -66,7 +62,8 @@ export class MemberModule {}
 
 ```ts
 // member.service.ts — completely vanilla NestJS + TypeORM
-import { Transactional } from '@nestjs-transactions/typeorm';
+// (InjectRepository is re-exported — @nestjs/typeorm's symbol, one import)
+import { InjectRepository, Transactional } from '@nestjs-transactions/typeorm';
 
 @Injectable()
 export class MemberService {
@@ -104,7 +101,7 @@ prototypes are patched; it is ordinary NestJS dependency injection. See
 - **[Multiple data sources](./multiple-data-sources.md)** — named connections.
 - **[Transaction hooks](./hooks.md)** — run code after commit/rollback.
 - **[Programmatic control](./programmatic-control.md)** — `TransactionHost` without the decorator.
-- **[Custom repositories](./custom-repositories.md)** — `TransactionalRepository`.
+- **[Custom repositories](./custom-repositories.md)** — `NestjsTypeormRepository`.
 - **[Testing](./testing.md)** — the no-op module for unit tests.
 - **[Migrating from typeorm-transactional](./migration.md)**.
 - **[Caveats](./caveats.md)**.

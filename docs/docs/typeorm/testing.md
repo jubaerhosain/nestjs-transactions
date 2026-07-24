@@ -27,4 +27,13 @@ const moduleRef = await Test.createTestingModule({
 
 `createNoOpTypeOrmTransactionalModule` is a unit-test replacement for
 `forRoot()` + `forFeature()`: `@Transactional()` no-ops and `@InjectRepository`
-resolves proxies over your mocked `manager.getRepository()`.
+resolves proxies over your mocked `manager.getRepository()` — no `DataSource`
+is created.
+
+To unit-test a
+[`NestjsTypeormRepository`](./custom-repositories.md) subclass this way,
+remember its inherited methods call the **manager** directly
+(`manager.find(Member, ...)`, `manager.save(Member, ...)`) and `this.metadata`
+reads `manager.connection.getMetadata(...)` — so either give the mock `manager`
+those methods, or simply override the subclass provider with a mock in the
+testing module.
