@@ -27,6 +27,7 @@ import { NestjsTypeormModule } from '@nestjs-transactions/typeorm';
   imports: [NestjsTypeormModule.forRoot({/* all @nestjs/typeorm options ... */})],
 })
 export class AppModule {}
+```
 
 `forRoot()` accepts everything `@nestjs/typeorm`'s does (`autoLoadEntities`,
 `retryAttempts`, `name`, …) — it delegates DataSource creation to
