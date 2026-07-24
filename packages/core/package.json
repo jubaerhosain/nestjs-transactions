@@ -1,6 +1,6 @@
 {
   "name": "@nestjs-transactions/core",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "ORM-agnostic building blocks for declarative transaction propagation in NestJS, built on @nestjs-cls/transactional",
   "license": "MIT",
   "author": "Jubaer Hosain",
