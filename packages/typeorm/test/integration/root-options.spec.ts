@@ -5,9 +5,9 @@ import {
   InjectRepository,
   InjectTransaction,
   IsolationLevel,
+  NestjsTypeormModule,
   Transactional,
   TransactionalAdapterTypeOrm,
-  NestjsTypeormModule,
 } from '../../src';
 import type { Transaction } from '../../src';
 import { Member, PG_A } from './fixtures';

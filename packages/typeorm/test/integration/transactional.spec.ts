@@ -4,13 +4,13 @@ import { Repository } from 'typeorm';
 import {
   InjectRepository,
   IsolationLevel,
+  NestjsTypeormModule,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
   TransactionAlreadyActiveError,
   TransactionHost,
   TransactionNotActiveError,
-  NestjsTypeormModule,
 } from '../../src';
 import { Member, PG_A } from './fixtures';
 

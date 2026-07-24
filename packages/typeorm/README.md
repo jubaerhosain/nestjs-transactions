@@ -120,7 +120,9 @@ NestjsTypeormModule.forRootAsync({
 
 In `forRootAsync`, `name` and `enableTransactionProxy` must be static (on the
 outer options object, not returned by the factory) — DI tokens are computed at
-module-definition time.
+module-definition time. `forRootAsync` is factory-only: `@nestjs/typeorm`'s
+`useClass`/`useExisting` forms are not supported (wrap such a provider in
+`useFactory`/`inject` instead).
 
 ## Multiple data sources
 
@@ -264,7 +266,7 @@ v5 merges the two-module setup into the single `NestjsTypeormModule`:
 - Replace `import { TypeOrmModule } from '@nestjs/typeorm'` + `import { TransactionalModule } from '@nestjs-transactions/typeorm'` with a single `import { NestjsTypeormModule } from '@nestjs-transactions/typeorm'`.
 - Delete the `TransactionalModule.forRoot(...)` lines; move `defaultTxOptions` / `enableTransactionProxy` into `NestjsTypeormModule.forRoot({ ...dbOptions, ... })`. `name` now also names the transactional connection (`connectionName` is gone from the root options).
 - Rename both `TypeOrmModule.forFeature(...)` and `TransactionalModule.forFeature(...)` to `NestjsTypeormModule.forFeature(...)` — same signature.
-- Attaching to an externally managed DataSource (`TransactionalModule.forRoot({ dataSource, imports })`) is no longer part of the public surface — `forRoot` always owns the DataSource.
+- Attaching to an externally managed DataSource (`TransactionalModule.forRoot({ dataSource, imports })`) is no longer part of the public surface — `forRoot` always owns the DataSource. If your app must keep managing the DataSource itself, register the CLS plugin directly with [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) (`ClsModule.forRoot({ plugins: [new ClsPluginTransactional({ adapter: new TransactionalAdapterTypeOrm({ dataSourceToken }) })] })`) and wire repositories with `provideTransactionAwareRepository`.
 
 ## Caveats
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
-import { InjectRepository, Transactional, NestjsTypeormModule } from '../../src';
+import { InjectRepository, NestjsTypeormModule, Transactional } from '../../src';
 import { Member, PG_A } from './fixtures';
 
 @Injectable()

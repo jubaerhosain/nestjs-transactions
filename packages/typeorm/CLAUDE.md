@@ -32,7 +32,11 @@ isolationLevel? })`, matching `typeorm-transactional`'s ergonomics. It is a
   transactional connection. Options types: `NestjsTypeormRootOptions` /
   `NestjsTypeormRootAsyncOptions` (`src/interfaces.ts`). In `forRootAsync`, one
   shared options module feeds both halves so the user factory runs exactly
-  once; `name`/`enableTransactionProxy` must be static. `forFeature`
+  once; `name`/`enableTransactionProxy` must be static, and it is factory-only
+  (no `useClass`/`useExisting`). `forFeature` rejects a nest-style raw
+  DataSource/DataSourceOptions second arg (guided error — wrap as
+  `{ dataSource }`) and a split `{ connectionName, dataSource }` whose names
+  differ. `forFeature`
   internally imports `@nestjs/typeorm`'s `forFeature` for its
   `EntitiesMetadataStorage` side effect (keeps `autoLoadEntities` working) and
   shadows its repository tokens with transaction-aware providers.

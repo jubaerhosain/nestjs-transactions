@@ -86,6 +86,21 @@ describe('NestjsTypeormModule (unified)', () => {
       expect(nestArgs.useFactory!(combined)).toEqual({ type: 'postgres' });
     });
 
+    it('forces the STATIC name onto the factory result (shutdown resolves the token from it)', () => {
+      // TypeOrmCoreModule.onApplicationShutdown looks the DataSource up by the
+      // RESOLVED options' name — Nest never merges the static `name` back in,
+      // so it must be present (and factory-returned names must lose).
+      const nestForRootAsync = jest.spyOn(NestTypeOrmModule, 'forRootAsync');
+
+      NestjsTypeormModule.forRootAsync({ name: 'stats', useFactory: () => ({ type: 'postgres' }) });
+
+      const nestArgs = nestForRootAsync.mock.calls[0][0];
+      expect(nestArgs.useFactory!({ type: 'postgres', name: 'sneaky' })).toEqual({
+        type: 'postgres',
+        name: 'stats',
+      });
+    });
+
     it('feeds only defaultTxOptions to the transactional half', () => {
       const txForRootAsync = jest.spyOn(TransactionalModule, 'forRootAsync');
 
@@ -98,6 +113,25 @@ describe('NestjsTypeormModule (unified)', () => {
           defaultTxOptions: { isolationLevel: 'SERIALIZABLE' },
         }),
       ).toEqual({ defaultTxOptions: { isolationLevel: 'SERIALIZABLE' } });
+    });
+
+    it('ignores a factory-returned enableTransactionProxy (only the static outer option counts)', () => {
+      const nestForRootAsync = jest.spyOn(NestTypeOrmModule, 'forRootAsync');
+      const txForRootAsync = jest.spyOn(TransactionalModule, 'forRootAsync');
+
+      NestjsTypeormModule.forRootAsync({ useFactory: () => ({ type: 'postgres' }) });
+
+      const combined: NestjsTypeormRootOptions = { type: 'postgres', enableTransactionProxy: true };
+      // Stripped for the DataSource half...
+      expect(nestForRootAsync.mock.calls[0][0].useFactory!(combined)).toEqual({
+        type: 'postgres',
+      });
+      // ...not forwarded by the transactional half's factory...
+      expect(txForRootAsync.mock.calls[0][0].useFactory(combined)).not.toHaveProperty(
+        'enableTransactionProxy',
+      );
+      // ...and the plugin gets the static outer option (absent here).
+      expect(txForRootAsync.mock.calls[0][0].enableTransactionProxy).toBeUndefined();
     });
 
     it('uses a unique options token per registration (never collides)', () => {
@@ -161,6 +195,19 @@ describe('NestjsTypeormModule (unified)', () => {
       expect(() =>
         NestjsTypeormModule.forFeature([Member], { connectionName: 'stats' }),
       ).not.toThrow();
+    });
+
+    it('rejects a raw options-like object passed in @nestjs/typeorm style', () => {
+      // Nest's forFeature takes a raw DataSource/DataSourceOptions second arg;
+      // ours takes it wrapped as { dataSource }. Unwrapped (possible only from
+      // untyped JS) it would silently bind to the DEFAULT connection.
+      expect(() =>
+        NestjsTypeormModule.forFeature([Member], { type: 'postgres', name: 'stats' } as any),
+      ).toThrow(/neither 'connectionName' nor 'dataSource'/);
+    });
+
+    it('accepts an empty object (same as omitting the connection)', () => {
+      expect(() => NestjsTypeormModule.forFeature([Member], {})).not.toThrow();
     });
   });
 });

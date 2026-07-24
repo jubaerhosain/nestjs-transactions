@@ -60,7 +60,8 @@ export type NestjsTypeormRootOptions = NestTypeOrmModuleOptions & {
  * Async variant of {@link NestjsTypeormRootOptions}: the factory resolves the
  * combined options at DI time. `name` and `enableTransactionProxy` must be
  * static — DI tokens and the CLS plugin are registered at module-definition
- * time, so a `name` returned by the factory is ignored (stripped).
+ * time, so a `name` returned by the factory is ignored (replaced with the
+ * static one).
  */
 export interface NestjsTypeormRootAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   /** Name of the DataSource and transactional connection. Must be static. */

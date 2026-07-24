@@ -5,11 +5,11 @@ import {
   InjectRepository,
   InjectTransactionHost,
   IsolationLevel,
+  NestjsTypeormModule,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
   TransactionHost,
-  NestjsTypeormModule,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
 
@@ -164,5 +164,56 @@ describe('forFeature with object-form dataSource-only options (real Postgres)', 
   it("registers the 'stats' connection so @Transactional({ connectionName: 'stats' }) wraps the stats DB", async () => {
     await expect(service.recordAndFail('s1')).rejects.toThrow('stats boom');
     await expect(service.stats.count()).resolves.toBe(0); // rolled back on the stats DB
+  });
+});
+
+// forRootAsync with a NAMED connection: the static outer `name` must key the
+// DataSource, the TransactionHost, and the repository tokens consistently,
+// with the database options resolved by the factory at DI time.
+describe('forRootAsync with a named connection (real Postgres, two databases)', () => {
+  @Injectable()
+  class AsyncStatsService {
+    constructor(
+      @InjectRepository(Member) readonly members: Repository<Member>,
+      @InjectRepository(Stat, 'stats') readonly stats: Repository<Stat>,
+    ) {}
+
+    @Transactional({ connectionName: 'stats' })
+    async recordStatAndWriteMember(label: string, name: string): Promise<void> {
+      await this.stats.save({ label });
+      // Member write happens on the DEFAULT connection — outside the stats transaction.
+      await this.members.save({ name });
+      throw new Error('stats boom');
+    }
+  }
+
+  let moduleRef: TestingModule;
+  let service: AsyncStatsService;
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({
+      imports: [
+        NestjsTypeormModule.forRoot(PG_A),
+        NestjsTypeormModule.forRootAsync({
+          name: 'stats',
+          useFactory: async () => ({ ...PG_B }),
+        }),
+        NestjsTypeormModule.forFeature([Member]),
+        NestjsTypeormModule.forFeature([Stat], 'stats'),
+      ],
+      providers: [AsyncStatsService],
+    }).compile();
+    await moduleRef.init();
+    service = moduleRef.get(AsyncStatsService);
+    await service.members.clear();
+    await service.stats.clear();
+  });
+
+  afterAll(() => moduleRef.close());
+
+  it("rolls back the async-registered 'stats' connection without touching the default one", async () => {
+    await expect(service.recordStatAndWriteMember('s1', 'm1')).rejects.toThrow('stats boom');
+    await expect(service.stats.count()).resolves.toBe(0); // rolled back on the stats DB
+    await expect(service.members.count()).resolves.toBe(1); // auto-committed on the default DB
   });
 });

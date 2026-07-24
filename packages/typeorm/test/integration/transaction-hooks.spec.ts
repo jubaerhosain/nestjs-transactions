@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
 import {
   InjectRepository,
+  NestjsTypeormModule,
   Propagation,
   runOnTransactionCommit,
   runOnTransactionComplete,
@@ -10,7 +11,6 @@ import {
   Transactional,
   TransactionalAdapterTypeOrm,
   TransactionHost,
-  NestjsTypeormModule,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
 

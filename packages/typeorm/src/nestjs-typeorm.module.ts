@@ -58,7 +58,8 @@ export class NestjsTypeormModule {
    * Async variant: the factory resolves the combined options (DataSource +
    * `defaultTxOptions`) at DI time. `name` and `enableTransactionProxy` must
    * be static on the outer options — a `name` returned by the factory is
-   * stripped (DI tokens are computed at module-definition time).
+   * replaced with the static one (DI tokens are computed at module-definition
+   * time).
    */
   static forRootAsync(options: NestjsTypeormRootAsyncOptions): DynamicModule {
     // Unique per registration (shared across both halves via this closure), so
@@ -84,7 +85,8 @@ export class NestjsTypeormModule {
           name: options.name,
           imports: [optionsModule],
           inject: [token],
-          useFactory: (combined: NestjsTypeormRootOptions) => stripTxOptions(combined),
+          useFactory: (combined: NestjsTypeormRootOptions) =>
+            stripTxOptions(combined, options.name),
           dataSourceFactory: options.dataSourceFactory,
         }),
         TransactionalModule.forRootAsync({
@@ -141,7 +143,23 @@ class TypeOrmOptionsHolderModule {}
  * to the other, so they never trip this.)
  */
 function assertUnifiedConnection(connection?: ForFeatureConnection): void {
-  if (typeof connection !== 'object') {
+  if (connection === null || typeof connection !== 'object') {
+    return;
+  }
+  // `@nestjs/typeorm`'s forFeature takes a raw DataSource/DataSourceOptions as
+  // its second argument; ours takes it wrapped as `{ dataSource }`. A raw
+  // object (untyped callers — TypeScript rejects it) carries neither of our
+  // keys and would silently resolve to the DEFAULT connection, so reject any
+  // object with foreign keys only. (A bare `{}` is equivalent to omitting the
+  // argument and stays allowed.)
+  if (!('connectionName' in connection) && !('dataSource' in connection)) {
+    if (Object.keys(connection).length > 0) {
+      throw new Error(
+        `NestjsTypeormModule.forFeature received an object with neither 'connectionName' nor ` +
+          `'dataSource' — it would silently bind to the default connection. Pass the connection ` +
+          `as a string name, or wrap a DataSource/DataSourceOptions as { dataSource: ... }.`,
+      );
+    }
     return;
   }
   const { connectionName, dataSource } = connection;
@@ -162,16 +180,25 @@ function assertUnifiedConnection(connection?: ForFeatureConnection): void {
 }
 
 /**
- * Remove the keys `@nestjs/typeorm` must not see: the transactional options,
- * and `name` — the name must be static on the outer async options (tokens are
- * computed at module-definition time), so a factory-returned `name` would
- * silently disagree with the registered tokens.
+ * Remove the transactional keys `@nestjs/typeorm` must not see, and force
+ * `name` to the static outer value: `name` must be static on the outer async
+ * options (tokens are computed at module-definition time), so a
+ * factory-returned `name` would silently disagree with the registered tokens.
+ * It cannot simply be deleted either — `TypeOrmCoreModule.onApplicationShutdown`
+ * resolves the DataSource token from these RESOLVED options (Nest never merges
+ * the static `name` back in), so a named connection would fail to shut down.
  */
-function stripTxOptions(combined: NestjsTypeormRootOptions): TypeOrmModuleOptions {
+function stripTxOptions(
+  combined: NestjsTypeormRootOptions,
+  staticName: string | undefined,
+): TypeOrmModuleOptions {
   const ormOptions: NestjsTypeormRootOptions = { ...combined };
   delete ormOptions.defaultTxOptions;
   delete ormOptions.enableTransactionProxy;
-  // Static-only option: a `name` returned by the async factory is ignored.
-  delete ormOptions.name;
+  if (staticName === undefined) {
+    delete ormOptions.name;
+  } else {
+    ormOptions.name = staticName;
+  }
   return ormOptions as TypeOrmModuleOptions;
 }

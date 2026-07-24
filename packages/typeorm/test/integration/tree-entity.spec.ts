@@ -9,7 +9,7 @@ import {
   TreeParent,
   TreeRepository,
 } from 'typeorm';
-import { InjectRepository, Transactional, NestjsTypeormModule } from '../../src';
+import { InjectRepository, NestjsTypeormModule, Transactional } from '../../src';
 import { PG_A } from './fixtures';
 
 @Entity()
