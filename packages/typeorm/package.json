@@ -10,12 +10,20 @@
     "directory": "packages/typeorm"
   },
   "homepage": "https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm",
+  "bugs": {
+    "url": "https://github.com/jubaerhosain/nestjs-transactions/issues"
+  },
   "keywords": [
     "nestjs",
+    "nestjs-transactions",
+    "nestjs-cls",
     "typeorm",
     "transactional",
     "typeorm-transactional",
     "transaction",
+    "propagation",
+    "isolation",
+    "savepoint",
     "cls",
     "async-local-storage",
     "repository"

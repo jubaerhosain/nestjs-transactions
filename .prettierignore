@@ -3,5 +3,7 @@ pnpm-lock.yaml
 # Docusaurus generated output (authored docs/ markdown stays prettier-clean)
 docs/build/
 docs/.docusaurus/
+# Google Search Console ownership proof — content must stay byte-exact
+docs/static/googlebb31fc13daeeaa3d.html
 # Local, untracked Claude Code settings
 .claude/
