@@ -1,5 +1,14 @@
 # @nestjs-transactions/typeorm
 
+## 5.0.3
+
+### Patch Changes
+
+- [#42](https://github.com/jubaerhosain/nestjs-transactions/pull/42) [`9fa9ee8`](https://github.com/jubaerhosain/nestjs-transactions/commit/9fa9ee832775bc4a404e4aa05478b3adc6234246) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - Improve npm discoverability: README badges (npm version, downloads, CI, license), expanded `keywords`, explicit `bugs` URL, and a LICENSE file in the prisma package.
+
+- Updated dependencies [[`9fa9ee8`](https://github.com/jubaerhosain/nestjs-transactions/commit/9fa9ee832775bc4a404e4aa05478b3adc6234246)]:
+  - @nestjs-transactions/core@0.4.5
+
 ## 5.0.2
 
 ### Patch Changes
