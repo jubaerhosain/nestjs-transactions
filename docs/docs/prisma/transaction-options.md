@@ -1,5 +1,4 @@
 ---
-id: transaction-options
 title: Transaction options & isolation levels (Prisma)
 description: Configure Prisma interactive-transaction options — timeout, maxWait, and isolationLevel — per call or as defaults in NestJS.
 sidebar_label: Transaction options

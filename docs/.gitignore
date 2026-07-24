@@ -3,6 +3,9 @@
 /.docusaurus
 /node_modules
 
+# Generated from og-card.svg by scripts/generate-og-card.mjs
+/static/img/og-card.png
+
 # Misc
 .DS_Store
 .env.local

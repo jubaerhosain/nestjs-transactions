@@ -1,5 +1,4 @@
 ---
-id: testing
 title: Unit testing (TypeORM)
 description: Unit-test @Transactional() NestJS services without a database using createNoOpTypeOrmTransactionalModule.
 sidebar_label: Testing

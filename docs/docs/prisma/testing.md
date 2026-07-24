@@ -1,5 +1,4 @@
 ---
-id: testing
 title: Unit testing (Prisma)
 description: Unit-test @Transactional() NestJS services without a database using createNoOpPrismaTransactionalModule.
 sidebar_label: Testing

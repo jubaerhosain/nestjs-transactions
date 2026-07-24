@@ -1,5 +1,4 @@
 ---
-id: propagation
 title: Propagation modes (TypeORM)
 description: The seven @Transactional() propagation modes for NestJS + TypeORM — REQUIRED, REQUIRES_NEW, NESTED, MANDATORY, NEVER, SUPPORTS, NOT_SUPPORTED.
 sidebar_label: Propagation

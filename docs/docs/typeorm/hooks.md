@@ -1,5 +1,4 @@
 ---
-id: hooks
 title: Transaction hooks (TypeORM)
 description: Run callbacks after a transaction commits, rolls back, or completes with runOnTransactionCommit / runOnTransactionRollback / runOnTransactionComplete in NestJS + TypeORM.
 sidebar_label: Transaction hooks

@@ -31,9 +31,11 @@ pnpm workspace (`pnpm-workspace.yaml` → `packages/*` + `docs`).
 (`docs:dev`/`docs:build`/`docs:serve`), so `pnpm -r build`/`typecheck`/`test`
 skip it (no matching script) and `pnpm -r publish` skips it (`private: true`) —
 no CI or root-script changes were needed. **The docs site is the single source of
-truth for comprehensive docs;** the three npm package READMEs are slim landing
-pages that link to it, so deep content is edited on the site, not duplicated in
-READMEs.
+truth for comprehensive docs.** The `prisma` and `core` npm READMEs are slim
+landing pages that link to it; the `typeorm` README deliberately keeps the full
+manual for now (a deliberate decision — npm users get complete docs without
+leaving the page), so TypeORM doc edits must be mirrored between the README and
+`docs/docs/typeorm/*`.
 
 **Single symbol identity:** `core` re-exports the canonical decorators, tokens,
 and error classes from `@nestjs-cls/transactional`, and every adapter re-exports
@@ -103,9 +105,12 @@ two suites never touch each other's tables.
   intentionally different.
 - **`typecheck` depends on `build`:** run `pnpm -r build` before `pnpm typecheck`
   (cross-package types resolve through built `dist`).
-- **Prisma build scripts are allowlisted** in `pnpm-workspace.yaml`
-  (`allowBuilds`: `prisma`, `@prisma/engines`) — pnpm 11 blocks dependency
-  postinstall scripts by default. The prisma package's `typecheck`/`test:int`
+- **Dependency build scripts are gated** in `pnpm-workspace.yaml` — pnpm 11
+  blocks dependency postinstall scripts by default. The `allowBuilds` map
+  allows `prisma` and `@prisma/engines` (needed for `prisma generate`/`db push`)
+  and explicitly declines `core-js` (a Docusaurus transitive dependency whose
+  postinstall only prints a funding banner — set to `false` to silence pnpm's
+  "ignored build scripts" warning). The prisma package's `typecheck`/`test:int`
   scripts chain `prisma generate`/`db push` themselves (its integration tests
   import the generated client; `src/` never does, so `build` needs no generate).
 - **`main` is protected** (branch ruleset). Work on a branch and open a PR.

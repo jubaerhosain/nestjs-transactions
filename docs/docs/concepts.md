@@ -1,9 +1,7 @@
 ---
-id: concepts
 title: How it works — CLS propagation & no monkey-patching
 description: How nestjs-transactions propagates transactions through CLS (AsyncLocalStorage) across NestJS services without monkey-patching, built on @nestjs-cls/transactional.
 sidebar_label: Concepts
-sidebar_position: 3
 ---
 
 # Concepts

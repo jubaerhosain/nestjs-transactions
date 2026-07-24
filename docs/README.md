@@ -25,8 +25,10 @@ pnpm --filter @nestjs-transactions/docs docs:clear   # clear the Docusaurus cach
 - The sidebar/ordering is defined manually in `sidebars.ts`.
 - SEO config (sitemap, canonical, Open Graph, JSON-LD) lives in
   `docusaurus.config.ts`; `static/robots.txt` points crawlers at the sitemap.
-- This site is the **single source of truth** for comprehensive docs; the npm
-  package READMEs are slim landing pages that link here.
+- This site is the **single source of truth** for comprehensive docs; the
+  `prisma` and `core` npm READMEs are slim landing pages that link here (the
+  `typeorm` README deliberately keeps the full manual for now — edits to
+  TypeORM docs must be mirrored there).
 
 ## Deployment
 

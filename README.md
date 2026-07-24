@@ -7,12 +7,16 @@
 ```ts
 @Injectable()
 export class MemberService {
-  constructor(@InjectRepository(Member) private readonly repo: Repository<Member>) {}
+  constructor(
+    @InjectRepository(Member) private readonly repo: Repository<Member>,
+    private readonly accounting: AccountingService,
+  ) {}
 
   @Transactional()
-  async transfer(from: string, to: string) {
-    await this.repo.save(/* ... */); // runs on the active transactional EntityManager
-    await this.accounting.record(); // same transaction, propagated through CLS
+  async register(name: string) {
+    const member = await this.repo.save({ name });
+    await this.accounting.openAccount(member); // joins the SAME transaction
+    return member; // no decorator needed there
   }
 }
 ```
@@ -39,7 +43,8 @@ Every adapter exposes the same transactional surface — `Transactional`, `Propa
 
 ```bash
 npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
+  @nestjs/typeorm typeorm @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
 ```ts

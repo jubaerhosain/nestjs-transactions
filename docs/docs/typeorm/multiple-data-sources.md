@@ -1,5 +1,4 @@
 ---
-id: multiple-data-sources
 title: Multiple data sources (TypeORM)
 description: Use nestjs-transactions with multiple TypeORM data sources — name connections and target them per @Transactional() call.
 sidebar_label: Multiple data sources

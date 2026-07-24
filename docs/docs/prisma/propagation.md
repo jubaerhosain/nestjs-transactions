@@ -1,5 +1,4 @@
 ---
-id: propagation
 title: Propagation modes (Prisma)
 description: The seven @Transactional() propagation modes for NestJS + Prisma, plus the NESTED/sqlFlavor savepoint rule.
 sidebar_label: Propagation

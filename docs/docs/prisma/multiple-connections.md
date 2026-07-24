@@ -1,5 +1,4 @@
 ---
-id: multiple-connections
 title: Multiple connections (Prisma)
 description: Use nestjs-transactions with multiple Prisma clients — register a named forRoot per connection and target each per @Transactional() call.
 sidebar_label: Multiple connections

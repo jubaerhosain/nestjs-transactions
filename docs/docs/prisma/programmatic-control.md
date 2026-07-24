@@ -1,5 +1,4 @@
 ---
-id: programmatic-control
 title: Programmatic control (Prisma)
 description: Run transactions imperatively with TransactionHost, or inject the raw active-transaction client with @InjectTransaction() in NestJS + Prisma.
 sidebar_label: Programmatic control

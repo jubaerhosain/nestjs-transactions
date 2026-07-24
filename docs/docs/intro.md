@@ -1,10 +1,8 @@
 ---
-id: intro
 title: nestjs-transactions
 description: Declarative @Transactional() for NestJS with TypeORM and Prisma. Transactions propagate through CLS across services, with zero monkey-patching.
 slug: /
 sidebar_label: Introduction
-sidebar_position: 1
 ---
 
 # nestjs-transactions
@@ -17,12 +15,16 @@ monkey-patching**.
 ```ts
 @Injectable()
 export class MemberService {
-  constructor(@InjectRepository(Member) private readonly repo: Repository<Member>) {}
+  constructor(
+    @InjectRepository(Member) private readonly repo: Repository<Member>,
+    private readonly accounting: AccountingService,
+  ) {}
 
   @Transactional()
-  async transfer(from: string, to: string) {
-    await this.repo.save(/* ... */); // runs on the active transactional EntityManager
-    await this.accounting.record(); // same transaction, propagated through CLS
+  async register(name: string) {
+    const member = await this.repo.save({ name });
+    await this.accounting.openAccount(member); // joins the SAME transaction
+    return member; // no decorator needed there
   }
 }
 ```

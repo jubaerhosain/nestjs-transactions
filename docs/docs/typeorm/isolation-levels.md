@@ -1,5 +1,4 @@
 ---
-id: isolation-levels
 title: Isolation levels & transaction options (TypeORM)
 description: Set default and per-call transaction isolation levels for NestJS + TypeORM with the type-safe IsolationLevel enum.
 sidebar_label: Isolation levels

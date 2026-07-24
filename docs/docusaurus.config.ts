@@ -1,9 +1,12 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const url = 'https://jubaerhosain.github.io';
 const baseUrl = '/nestjs-transactions/';
+const repoUrl = 'https://github.com/jubaerhosain/nestjs-transactions';
 
 const config: Config = {
   title: 'nestjs-transactions',
@@ -40,12 +43,26 @@ const config: Config = {
         name: 'nestjs-transactions',
         description:
           'Declarative @Transactional() for NestJS with TypeORM and Prisma, built on @nestjs-cls/transactional with no monkey-patching.',
-        codeRepository: 'https://github.com/jubaerhosain/nestjs-transactions',
+        codeRepository: repoUrl,
         programmingLanguage: 'TypeScript',
         license: 'https://opensource.org/licenses/MIT',
         url: url + baseUrl,
       }),
     },
+  ],
+
+  plugins: [
+    // Emit robots.txt at build time so the sitemap URL is derived from
+    // url + baseUrl instead of being hardcoded in a static file.
+    () => ({
+      name: 'emit-robots-txt',
+      postBuild({ outDir }: { outDir: string }) {
+        fs.writeFileSync(
+          path.join(outDir, 'robots.txt'),
+          `User-agent: *\nAllow: /\n\nSitemap: ${url}${baseUrl}sitemap.xml\n`,
+        );
+      },
+    }),
   ],
 
   presets: [
@@ -54,7 +71,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/jubaerhosain/nestjs-transactions/tree/main/docs/',
+          editUrl: `${repoUrl}/tree/main/docs/`,
         },
         blog: false,
         theme: {
@@ -72,7 +89,8 @@ const config: Config = {
   themeConfig: {
     // og:image / twitter:image must be a raster format — social crawlers
     // (X, Facebook, LinkedIn, Slack, Discord) don't render SVG. og-card.svg is
-    // the editable source; regenerate the PNG from it when it changes.
+    // the editable source; scripts/generate-og-card.mjs renders the PNG from
+    // it on every docs:dev/docs:build (the PNG is gitignored).
     image: 'img/og-card.png',
     metadata: [
       {
@@ -114,7 +132,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/jubaerhosain/nestjs-transactions',
+          href: repoUrl,
           label: 'GitHub',
           position: 'right',
         },
@@ -153,7 +171,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/jubaerhosain/nestjs-transactions',
+              href: repoUrl,
             },
             {
               label: '@nestjs-cls/transactional',

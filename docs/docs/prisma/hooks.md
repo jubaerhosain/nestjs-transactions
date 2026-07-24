@@ -1,5 +1,4 @@
 ---
-id: hooks
 title: Transaction hooks (Prisma)
 description: Run callbacks after a transaction commits, rolls back, or completes with runOnTransactionCommit / runOnTransactionRollback / runOnTransactionComplete in NestJS + Prisma.
 sidebar_label: Transaction hooks

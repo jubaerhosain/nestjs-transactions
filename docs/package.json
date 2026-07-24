@@ -4,8 +4,8 @@
   "private": true,
   "description": "Documentation site for nestjs-transactions (not published).",
   "scripts": {
-    "docs:dev": "docusaurus start",
-    "docs:build": "docusaurus build",
+    "docs:dev": "node scripts/generate-og-card.mjs && docusaurus start",
+    "docs:build": "node scripts/generate-og-card.mjs && docusaurus build",
     "docs:serve": "docusaurus serve",
     "docs:clear": "docusaurus clear",
     "docs:typecheck": "tsc"
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.9.0",
+    "@resvg/resvg-js": "^2.6.0",
     "@docusaurus/tsconfig": "^3.9.0",
     "@docusaurus/types": "^3.9.0",
     "typescript": "^5.9.0"

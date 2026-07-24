@@ -1,5 +1,4 @@
 ---
-id: migration
 title: Migrating from typeorm-transactional
 description: Move from the unmaintained typeorm-transactional package to nestjs-transactions — keep @Transactional() and your @InjectRepository services, drop the global bootstrap.
 sidebar_label: Coming from typeorm-transactional

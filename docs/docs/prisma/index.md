@@ -1,5 +1,4 @@
 ---
-id: index
 title: Prisma adapter
 description: Declarative @Transactional() for NestJS + Prisma. Inject one transaction-aware Prisma client, add one decorator, and drop the $transaction boilerplate — no monkey-patching.
 sidebar_label: Overview
@@ -20,10 +19,11 @@ services. Standard NestJS dependency injection built on the actively maintained
 
 ```bash
 npm install @nestjs-transactions/prisma @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-prisma nestjs-cls
+  @prisma/client @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-prisma nestjs-cls
 ```
 
-(All are peer dependencies — this package ships zero runtime dependencies.)
+(All are peer dependencies — this package ships zero runtime dependencies. `@nestjs/common` and `@nestjs/core` are peers too, but every NestJS app already has them; you likely already have `@prisma/client` as well.)
 
 ## Quick start
 

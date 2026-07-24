@@ -8,10 +8,11 @@
 
 ```bash
 npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
+  @nestjs/typeorm typeorm @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
-(All are peer dependencies — this package ships zero runtime dependencies.)
+(All are peer dependencies — this package ships zero runtime dependencies. `@nestjs/common` and `@nestjs/core` are peers too, but every NestJS app already has them.)
 
 ## Quick start
 
@@ -289,7 +290,7 @@ v5 merges the two-module setup into the single `NestjsTypeormModule`:
 ## Caveats
 
 - **Register the DataSource with `NestjsTypeormModule`, and repositories with `NestjsTypeormModule.forFeature`.** Repositories registered instead with `@nestjs/typeorm`'s `TypeOrmModule.forFeature` (or hand-rolled `Repository` providers) are plain repositories bound to the base `EntityManager` — they **bypass `@Transactional()`** and their writes escape rollback. Keep both on this package's module, and don't register the same entity with both packages' `forFeature` in one module (they claim the same token; the last registration wins). For custom repository classes, extend `NestjsTypeormRepository` (above) rather than `Repository`.
-- **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `RequiresNew` for genuine parallelism.
+- **`Promise.all` of queries inside one transaction** runs on a single database connection (a TypeORM/driver constraint shared by every transaction solution). Await sequentially inside transactions, or use `Propagation.REQUIRES_NEW` for genuine parallelism.
 - **`repo.extend()` on a plain repository** can't be intercepted — use `NestjsTypeormRepository` (above), whose subclasses support a transaction-aware `.extend()`.
 - If your app already uses `nestjs-cls` (`ClsModule.forRoot`), everything just works: this package only registers a CLS _plugin_ and never calls `ClsModule.forRoot()` itself.
 

@@ -1,5 +1,4 @@
 ---
-id: adapter-authors
 title: Core & writing an adapter
 description: The ORM-agnostic @nestjs-transactions/core building blocks and the SPI for authoring a new transactional adapter.
 sidebar_label: Core (adapter authors)

@@ -8,10 +8,11 @@
 
 ```bash
 npm install @nestjs-transactions/prisma @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-prisma nestjs-cls
+  @prisma/client @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-prisma nestjs-cls
 ```
 
-(All are peer dependencies — this package ships zero runtime dependencies.)
+(All are peer dependencies — this package ships zero runtime dependencies. `@nestjs/common` and `@nestjs/core` are peers too, but every NestJS app already has them.)
 
 ## Quick start
 

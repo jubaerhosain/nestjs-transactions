@@ -1,5 +1,4 @@
 ---
-id: index
 title: TypeORM adapter
 description: Declarative @Transactional() for NestJS + TypeORM. Keep @InjectRepository(Entity), add one decorator — transactions propagate through CLS across services, with no monkey-patching.
 sidebar_label: Overview
@@ -22,10 +21,11 @@ longer maintained.
 
 ```bash
 npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
+  @nestjs/typeorm typeorm @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
-(All are peer dependencies — this package ships zero runtime dependencies.)
+(All are peer dependencies — this package ships zero runtime dependencies. `@nestjs/common` and `@nestjs/core` are peers too, but every NestJS app already has them.)
 
 ## Quick start
 

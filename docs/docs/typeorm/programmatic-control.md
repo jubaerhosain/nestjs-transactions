@@ -1,5 +1,4 @@
 ---
-id: programmatic-control
 title: Programmatic control with TransactionHost (TypeORM)
 description: Run transactions imperatively without the @Transactional() decorator using TransactionHost in NestJS + TypeORM.
 sidebar_label: Programmatic control

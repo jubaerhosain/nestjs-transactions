@@ -1,9 +1,7 @@
 ---
-id: getting-started
 title: Getting started
 description: Install nestjs-transactions and add your first @Transactional() method for NestJS with TypeORM or Prisma.
 sidebar_label: Getting started
-sidebar_position: 2
 ---
 
 # Getting started
@@ -16,7 +14,8 @@ propagation.
 
 ```bash
 npm install @nestjs-transactions/typeorm @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-typeorm nestjs-cls
+  @nestjs/typeorm typeorm @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-typeorm nestjs-cls
 ```
 
 Use `NestjsTypeormModule` from this package **instead of `@nestjs/typeorm`'s
@@ -48,7 +47,8 @@ utilities.
 
 ```bash
 npm install @nestjs-transactions/prisma @nestjs-transactions/core \
-  @nestjs-cls/transactional @nestjs-cls/transactional-adapter-prisma nestjs-cls
+  @prisma/client @nestjs-cls/transactional \
+  @nestjs-cls/transactional-adapter-prisma nestjs-cls
 ```
 
 ```ts
@@ -72,7 +72,9 @@ Continue to the **[Prisma adapter](./prisma/index.md)** for the full setup,
 propagation, and transaction options.
 
 :::note Peer dependencies
-Every package listed in the install command is a **peer dependency** — the
+Every package listed in the install command is a **peer dependency**
+(`@nestjs/common` and `@nestjs/core` are peers too, but every NestJS app
+already has them) — the
 adapters ship zero runtime dependencies, so you always control the exact ORM and
 `nestjs-cls` versions.
 :::

@@ -1,5 +1,4 @@
 ---
-id: custom-repositories
 title: Custom repositories with NestjsTypeormRepository (TypeORM)
 description: Write transaction-aware custom TypeORM repositories in NestJS by extending NestjsTypeormRepository instead of using repo.extend().
 sidebar_label: Custom repositories

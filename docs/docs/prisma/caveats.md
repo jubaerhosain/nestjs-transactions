@@ -1,5 +1,4 @@
 ---
-id: caveats
 title: Caveats (Prisma)
 description: Known limitations when using nestjs-transactions with Prisma — NESTED needs sqlFlavor, the 5s timeout, no batch $transaction, Prisma 7 client types, and existing nestjs-cls setups.
 sidebar_label: Caveats

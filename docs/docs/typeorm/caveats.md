@@ -1,5 +1,4 @@
 ---
-id: caveats
 title: Caveats (TypeORM)
 description: Known limitations when using nestjs-transactions with TypeORM — duplicate entity registration, Promise.all inside a transaction, repo.extend(), and existing nestjs-cls setups.
 sidebar_label: Caveats
