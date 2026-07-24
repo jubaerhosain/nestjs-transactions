@@ -29,10 +29,17 @@ them from `core`. Never redefine these symbols in an adapter — always re-expor
 so `@Transactional`, `TransactionHost`, `Propagation`, etc. share one identity
 across all packages. **One deliberate exception:** the `typeorm` adapter wraps
 `@nestjs-cls`'s `Transactional` in its own object-form facade (a single-object
-API that resolves the positional-argument ambiguity); see
-`packages/typeorm/CLAUDE.md`. The `prisma` adapter follows the same facade
-pattern. All other symbols — including core's own `Transactional` — remain
-plain re-exports.
+API that resolves the positional-argument ambiguity); the `prisma` adapter
+follows the same facade pattern. See `packages/typeorm/CLAUDE.md`.
+
+The `typeorm` adapter also exports its own unified `NestjsTypeormModule` — a
+distinctly-named module (NOT shadowing `@nestjs/typeorm`'s `TypeOrmModule`) that
+owns both the DataSource (delegating to `@nestjs/typeorm` internally) and
+transaction propagation, so end users import ONE module instead of two (typeorm
+only; prisma's module stays `TransactionalModule`). The `@nestjs/typeorm`
+helpers the typeorm package re-exports (`InjectRepository`, tokens, …) remain
+identity re-exports. All other symbols — including core's own `Transactional` —
+remain plain re-exports.
 
 ## Commands
 
@@ -46,6 +53,7 @@ Run from the repo root unless noted. `-r` = across all workspace packages.
 | `pnpm typecheck`    | `tsc --noEmit -p tsconfig.json` per package. Type-checks **tests too** (jest runs use `isolatedModules` and skip full type-checking). Requires a prior `pnpm -r build` (typeorm resolves `@nestjs-transactions/core` via its built `dist/*.d.ts`). |
 | `pnpm format`       | `prettier --check .`.                                                                                                                                                                                                                              |
 | `pnpm -r test:unit` | Jest unit tests (`test/unit/**` + `src/**/*.spec.ts`).                                                                                                                                                                                             |
+| `pnpm -r test:cov`  | Unit tests with coverage (`jest --coverage`). Informational only — no thresholds, not a CI gate.                                                                                                                                                   |
 | `pnpm -r test:int`  | Integration tests (typeorm + prisma). Needs Postgres — see below.                                                                                                                                                                                  |
 | `pnpm changeset`    | Record a changeset for a user-facing change.                                                                                                                                                                                                       |
 | `pnpm ci:publish`   | Build + publish (used by release CI).                                                                                                                                                                                                              |

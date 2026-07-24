@@ -12,6 +12,7 @@
     "format": "prettier --check .",
     "test": "pnpm -r test",
     "test:unit": "pnpm -r test:unit",
+    "test:cov": "pnpm -r test:cov",
     "test:int": "pnpm -r --no-bail test:int",
     "changeset": "changeset",
     "ci:publish": "pnpm -r build && pnpm -r publish --access public --no-git-checks"

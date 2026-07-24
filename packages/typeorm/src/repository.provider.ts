@@ -56,7 +56,7 @@ export function provideTransactionAwareRepository(
 
 /**
  * Build the providers + export tokens for a set of entities. Shared by
- * `TransactionalModule.forFeature` and the testing module so both always wire
+ * `NestjsTypeormModule.forFeature` and the testing module so both always wire
  * repositories identically.
  */
 export function buildFeatureProviders(

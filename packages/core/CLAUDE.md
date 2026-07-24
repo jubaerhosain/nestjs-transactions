@@ -64,4 +64,5 @@ What an adapter package consumes from here:
 pnpm --filter @nestjs-transactions/core build
 pnpm --filter @nestjs-transactions/core typecheck
 pnpm --filter @nestjs-transactions/core test:unit
+pnpm --filter @nestjs-transactions/core test:cov    # unit tests + coverage report
 ```

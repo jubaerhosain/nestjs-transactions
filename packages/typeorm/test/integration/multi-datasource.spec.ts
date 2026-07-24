@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  InjectRepository,
   InjectTransactionHost,
   IsolationLevel,
+  NestjsTypeormModule,
   Propagation,
   Transactional,
   TransactionalAdapterTypeOrm,
-  TransactionalModule,
   TransactionHost,
 } from '../../src';
 import { Member, PG_A, PG_B, Stat } from './fixtures';
@@ -74,12 +74,10 @@ describe('multiple data sources (real Postgres, two databases)', () => {
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot(PG_A),
-        TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TransactionalModule.forRoot(),
-        TransactionalModule.forRoot({ connectionName: 'stats' }),
-        TransactionalModule.forFeature([Member]),
-        TransactionalModule.forFeature([Stat], 'stats'),
+        NestjsTypeormModule.forRoot(PG_A),
+        NestjsTypeormModule.forRoot({ ...PG_B, name: 'stats' }),
+        NestjsTypeormModule.forFeature([Member]),
+        NestjsTypeormModule.forFeature([Stat], 'stats'),
       ],
       providers: [ReportingService],
     }).compile();
@@ -133,7 +131,7 @@ describe('multiple data sources (real Postgres, two databases)', () => {
 
 // Regression for the review finding: { dataSource: 'stats' } used to bind the
 // stats repository to the DEFAULT connection's manager (silent wrong database).
-describe('forFeature/forRoot with dataSource-only options (real Postgres)', () => {
+describe('forFeature with object-form dataSource-only options (real Postgres)', () => {
   @Injectable()
   class StatsService {
     constructor(@InjectRepository(Stat, 'stats') readonly stats: Repository<Stat>) {}
@@ -151,9 +149,8 @@ describe('forFeature/forRoot with dataSource-only options (real Postgres)', () =
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot({ ...PG_B, name: 'stats' }),
-        TransactionalModule.forRoot({ dataSource: 'stats' }),
-        TransactionalModule.forFeature([Stat], { dataSource: 'stats' }),
+        NestjsTypeormModule.forRoot({ ...PG_B, name: 'stats' }),
+        NestjsTypeormModule.forFeature([Stat], { dataSource: 'stats' }),
       ],
       providers: [StatsService],
     }).compile();
@@ -167,5 +164,56 @@ describe('forFeature/forRoot with dataSource-only options (real Postgres)', () =
   it("registers the 'stats' connection so @Transactional({ connectionName: 'stats' }) wraps the stats DB", async () => {
     await expect(service.recordAndFail('s1')).rejects.toThrow('stats boom');
     await expect(service.stats.count()).resolves.toBe(0); // rolled back on the stats DB
+  });
+});
+
+// forRootAsync with a NAMED connection: the static outer `name` must key the
+// DataSource, the TransactionHost, and the repository tokens consistently,
+// with the database options resolved by the factory at DI time.
+describe('forRootAsync with a named connection (real Postgres, two databases)', () => {
+  @Injectable()
+  class AsyncStatsService {
+    constructor(
+      @InjectRepository(Member) readonly members: Repository<Member>,
+      @InjectRepository(Stat, 'stats') readonly stats: Repository<Stat>,
+    ) {}
+
+    @Transactional({ connectionName: 'stats' })
+    async recordStatAndWriteMember(label: string, name: string): Promise<void> {
+      await this.stats.save({ label });
+      // Member write happens on the DEFAULT connection — outside the stats transaction.
+      await this.members.save({ name });
+      throw new Error('stats boom');
+    }
+  }
+
+  let moduleRef: TestingModule;
+  let service: AsyncStatsService;
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({
+      imports: [
+        NestjsTypeormModule.forRoot(PG_A),
+        NestjsTypeormModule.forRootAsync({
+          name: 'stats',
+          useFactory: async () => ({ ...PG_B }),
+        }),
+        NestjsTypeormModule.forFeature([Member]),
+        NestjsTypeormModule.forFeature([Stat], 'stats'),
+      ],
+      providers: [AsyncStatsService],
+    }).compile();
+    await moduleRef.init();
+    service = moduleRef.get(AsyncStatsService);
+    await service.members.clear();
+    await service.stats.clear();
+  });
+
+  afterAll(() => moduleRef.close());
+
+  it("rolls back the async-registered 'stats' connection without touching the default one", async () => {
+    await expect(service.recordStatAndWriteMember('s1', 'm1')).rejects.toThrow('stats boom');
+    await expect(service.stats.count()).resolves.toBe(0); // rolled back on the stats DB
+    await expect(service.members.count()).resolves.toBe(1); // auto-committed on the default DB
   });
 });

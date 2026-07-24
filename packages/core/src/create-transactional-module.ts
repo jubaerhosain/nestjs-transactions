@@ -61,7 +61,7 @@ function buildDynamicModule(
   const plugin = new ClsPluginTransactional({
     connectionName: options.connectionName,
     enableTransactionProxy: options.enableTransactionProxy,
-    imports: [...(registration.imports ?? []), ...(extraImports ?? [])] as any[],
+    imports: [...(registration.imports ?? []), ...extraImports] as any[],
     adapter: registration.adapter,
   });
   // Adapter-contributed providers must live inside the plugin's (global) module

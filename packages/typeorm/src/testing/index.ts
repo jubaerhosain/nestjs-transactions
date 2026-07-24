@@ -24,10 +24,10 @@ export interface NoOpTypeOrmTransactionalOptions {
 }
 
 /**
- * Unit-test replacement for `TransactionalModule.forRoot()` +
- * `TransactionalModule.forFeature()`: `@Transactional()` methods run without
+ * Unit-test replacement for `NestjsTypeormModule.forRoot()` +
+ * `NestjsTypeormModule.forFeature()`: `@Transactional()` methods run without
  * real transactions and `@InjectRepository` resolves proxies over
- * `manager.getRepository(entity)`.
+ * `manager.getRepository(entity)` — no DataSource is created.
  */
 export function createNoOpTypeOrmTransactionalModule(
   options: NoOpTypeOrmTransactionalOptions,
