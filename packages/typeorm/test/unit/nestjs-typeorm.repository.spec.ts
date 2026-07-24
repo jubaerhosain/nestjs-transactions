@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { TransactionHost } from '@nestjs-transactions/core';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { EntityManager, Repository } from 'typeorm';
@@ -95,6 +96,29 @@ describe('NestjsTypeormRepository', () => {
       expect(extended.target).toBe(Member);
       await extended.find({});
       expect(current.find).toHaveBeenCalledWith(Member, {});
+    });
+  });
+
+  // `emitDecoratorMetadata` guards the txHost paramtype with
+  // `typeof TransactionHost !== 'undefined' ? TransactionHost : Object`, since
+  // under `isolatedModules` the import could be type-only and absent at runtime.
+  describe('constructor DI metadata', () => {
+    it('records TransactionHost as the txHost paramtype', () => {
+      const paramTypes = Reflect.getMetadata('design:paramtypes', NestjsTypeormRepository);
+      expect(paramTypes[1]).toBe(TransactionHost);
+    });
+
+    it('degrades the txHost paramtype to Object when TransactionHost has no runtime value', () => {
+      let Degraded: typeof NestjsTypeormRepository | undefined;
+      jest.isolateModules(() => {
+        jest.doMock('@nestjs-transactions/core', () => ({}));
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        Degraded = require('../../src/nestjs-typeorm.repository').NestjsTypeormRepository;
+      });
+      jest.dontMock('@nestjs-transactions/core');
+      expect(Degraded).toBeDefined();
+      const paramTypes = Reflect.getMetadata('design:paramtypes', Degraded!);
+      expect(paramTypes[1]).toBe(Object);
     });
   });
 });
