@@ -1,5 +1,17 @@
 # @nestjs-transactions/typeorm
 
+## 5.0.1
+
+### Patch Changes
+
+- [#33](https://github.com/jubaerhosain/nestjs-transactions/pull/33) [`82b09bf`](https://github.com/jubaerhosain/nestjs-transactions/commit/82b09bfc1eacd310d47adbd64cd7a54030bf9f2a) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - Add a `homepage` field pointing at the new documentation site
+  (https://jubaerhosain.github.io/nestjs-transactions/) and slim the `prisma` and
+  `core` READMEs to concise landing pages that link to the full docs (the
+  `typeorm` README keeps its full manual). The comprehensive documentation now
+  lives on the docs site as the single source of truth.
+- Updated dependencies [[`82b09bf`](https://github.com/jubaerhosain/nestjs-transactions/commit/82b09bfc1eacd310d47adbd64cd7a54030bf9f2a)]:
+  - @nestjs-transactions/core@0.4.3
+
 ## 5.0.0
 
 ### Major Changes
