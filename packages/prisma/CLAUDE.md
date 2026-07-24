@@ -93,5 +93,6 @@ pnpm --filter @nestjs-transactions/prisma test:int
 pnpm --filter @nestjs-transactions/prisma build       # no prisma generate needed
 pnpm --filter @nestjs-transactions/prisma typecheck   # runs prisma generate first
 pnpm --filter @nestjs-transactions/prisma test:unit
+pnpm --filter @nestjs-transactions/prisma test:cov    # unit tests + coverage report
 pnpm --filter @nestjs-transactions/prisma test:int    # needs Postgres (above)
 ```

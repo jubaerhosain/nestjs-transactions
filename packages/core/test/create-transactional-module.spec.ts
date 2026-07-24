@@ -249,4 +249,51 @@ describe('createTransactionalModule — forRootAsync happy path', () => {
     expect(moduleRef.get(AsyncConsumer).result).toEqual({ value: 198 });
     await moduleRef.close();
   });
+
+  it('works without options.imports (self-sufficient factory)', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AsyncModule.forRootAsync({ useFactory: () => ({ value: 5 }) })],
+      providers: [AsyncConsumer],
+    }).compile();
+
+    expect(moduleRef.get(AsyncConsumer).result).toEqual({ value: 5 });
+    await moduleRef.close();
+  });
+});
+
+describe('createTransactionalModule — adapter-registration imports', () => {
+  const CONFIG = 'REGISTRATION_CONFIG';
+  const FROM_IMPORT = 'FROM_IMPORT';
+
+  @Module({ providers: [{ provide: CONFIG, useValue: 7 }], exports: [CONFIG] })
+  class ConfigModule {}
+
+  // An adapter registration can carry its own imports (e.g. the typeorm adapter
+  // imports @nestjs/typeorm's module) — they must reach the plugin module so
+  // the registration's providers can inject from them.
+  const WithImports = createTransactionalModule<TransactionalRootOptionsBase>({
+    adapterFactory: () => ({
+      adapter: new FakeAdapter(),
+      imports: [ConfigModule],
+      providers: [
+        { provide: FROM_IMPORT, useFactory: (value: number) => value * 3, inject: [CONFIG] },
+      ],
+      exports: [FROM_IMPORT],
+    }),
+  });
+
+  @Injectable()
+  class ImportsConsumer {
+    constructor(@Inject(FROM_IMPORT) readonly value: number) {}
+  }
+
+  it('threads registration.imports into the plugin module (forRoot)', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [WithImports.forRoot()],
+      providers: [ImportsConsumer],
+    }).compile();
+
+    expect(moduleRef.get(ImportsConsumer).value).toBe(21);
+    await moduleRef.close();
+  });
 });

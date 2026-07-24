@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
+import * as coreTesting from '@nestjs-transactions/core/testing';
 import { Repository } from 'typeorm';
 import { Transactional, TransactionHost } from '../../src';
-import { createNoOpTypeOrmTransactionalModule } from '../../src/testing';
+import {
+  createNoOpTransactionalModule,
+  createNoOpTypeOrmTransactionalModule,
+  NoOpTransactionalAdapter,
+} from '../../src/testing';
 
 class Member {}
 
@@ -36,5 +41,20 @@ describe('createNoOpTypeOrmTransactionalModule', () => {
     expect(manager.getRepository).toHaveBeenCalledWith(Member);
 
     await moduleRef.close();
+  });
+
+  it('registers no repository providers when entities is omitted', () => {
+    const manager = { getRepository: jest.fn() };
+
+    const dynamicModule = createNoOpTypeOrmTransactionalModule({ manager });
+
+    expect(dynamicModule.providers).toEqual([]);
+    expect(dynamicModule.exports).toEqual([]);
+    expect(dynamicModule.imports).toHaveLength(1);
+  });
+
+  it("re-exports core's testing helpers with the same identity", () => {
+    expect(createNoOpTransactionalModule).toBe(coreTesting.createNoOpTransactionalModule);
+    expect(NoOpTransactionalAdapter).toBe(coreTesting.NoOpTransactionalAdapter);
   });
 });

@@ -190,6 +190,24 @@ describe('NestjsTypeormModule (unified)', () => {
       ).toThrow(/split connection is not supported|connectionName 'reporting'/);
     });
 
+    it('rejects a split where the dataSource is an options OBJECT with a differing name', () => {
+      expect(() =>
+        NestjsTypeormModule.forFeature([Member], {
+          connectionName: 'reporting',
+          dataSource: { type: 'postgres', name: 'stats' },
+        }),
+      ).toThrow(/connectionName 'reporting' and dataSource 'stats'/);
+    });
+
+    it("reports 'default' when the split dataSource OBJECT carries no name", () => {
+      expect(() =>
+        NestjsTypeormModule.forFeature([Member], {
+          connectionName: 'reporting',
+          dataSource: { type: 'postgres' },
+        }),
+      ).toThrow(/connectionName 'reporting' and dataSource 'default'/);
+    });
+
     it('allows the single-key object form (connectionName defaults to dataSource)', () => {
       expect(() => NestjsTypeormModule.forFeature([Member], { dataSource: 'stats' })).not.toThrow();
       expect(() =>

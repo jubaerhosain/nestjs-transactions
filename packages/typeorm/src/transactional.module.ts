@@ -19,8 +19,11 @@ const ASYNC_OPTIONS_TOKEN = Symbol('TYPEORM_TRANSACTIONAL_ASYNC_OPTIONS');
  * TransactionalAdapterTypeOrm whose `defaultTxOptions` are resolved through DI
  * (the plugin passes providers listed in `extraProviderTokens` to
  * `optionsFactory`, and reads `defaultTxOptions` right after calling it).
+ *
+ * @internal Exported for unit tests only — not part of the package surface
+ * (`src/index.ts` does not re-export it).
  */
-class AsyncOptionsTypeOrmAdapter extends TransactionalAdapterTypeOrm {
+export class AsyncOptionsTypeOrmAdapter extends TransactionalAdapterTypeOrm {
   extraProviderTokens = [ASYNC_OPTIONS_TOKEN];
 
   constructor(dataSourceToken: any) {

@@ -53,6 +53,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest",
     "test:unit": "jest",
+    "test:cov": "jest --coverage",
     "test:int": "jest --config jest.integration.config.js --runInBand"
   },
   "peerDependencies": {

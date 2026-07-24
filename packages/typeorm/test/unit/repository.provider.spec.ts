@@ -90,6 +90,24 @@ describe('provideTransactionAwareRepository', () => {
     expect(() => proxy.save({})).toThrow(/for entity MemberSchema/);
   });
 
+  it('falls back to String(entity) in the error when a schema-like entity has no name', () => {
+    const manager = { getRepository: jest.fn(() => undefined) };
+
+    // Schema-like object with options but no name…
+    const nameless = { options: {} } as any;
+    const namelessProxy = (
+      provideTransactionAwareRepository(nameless) as FactoryProvider
+    ).useFactory(fakeTxHost(manager));
+    expect(() => namelessProxy.save({})).toThrow(/for entity \[object Object\]/);
+
+    // …and one with no options at all.
+    const bare = {} as any;
+    const bareProxy = (provideTransactionAwareRepository(bare) as FactoryProvider).useFactory(
+      fakeTxHost(manager),
+    );
+    expect(() => bareProxy.save({})).toThrow(/for entity \[object Object\]/);
+  });
+
   it('uses getRepository when the entity has metadata but is not a tree', () => {
     const plainRepo = { kind: 'plain' };
     const manager = {

@@ -100,5 +100,6 @@ pnpm --filter @nestjs-transactions/typeorm test:int
 pnpm --filter @nestjs-transactions/typeorm build
 pnpm --filter @nestjs-transactions/typeorm typecheck
 pnpm --filter @nestjs-transactions/typeorm test:unit
+pnpm --filter @nestjs-transactions/typeorm test:cov   # unit tests + coverage report
 pnpm --filter @nestjs-transactions/typeorm test:int   # needs Postgres (above)
 ```
