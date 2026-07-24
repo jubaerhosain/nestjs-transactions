@@ -50,8 +50,8 @@ export {
 
 // TypeORM-specific extras
 export { IsolationLevel } from './isolation-level';
+export { NestjsTypeormRepository } from './nestjs-typeorm.repository';
 export { provideTransactionAwareRepository } from './repository.provider';
-export { TransactionalRepository } from './transactional.repository';
 
 // Advanced: the underlying adapter and a typed TransactionHost alias
 export {

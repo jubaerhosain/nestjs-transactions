@@ -48,10 +48,17 @@ isolationLevel? })`, matching `typeorm-transactional`'s ergonomics. It is a
   import. (Deprecated `InjectConnection`/`getConnectionToken` are not
   re-exported.)
 - `provideTransactionAwareRepository` — `src/repository.provider.ts`.
-- `TransactionalRepository` — `src/transactional.repository.ts`. Base class for
-  custom repositories; the entity and `TransactionHost` are passed via the
-  constructor (`super(Entity, txHost)`), so subclasses (and user-defined generic
-  base repositories) stay plain classes. Use `this.repo` / `this.manager`.
+- `NestjsTypeormRepository` — `src/nestjs-typeorm.repository.ts`. Base class for
+  custom repositories that **extends TypeORM's `Repository<Entity>`**: inherited
+  methods are called directly on `this` (`this.find()`, `this.save()`, …) and are
+  transaction-aware — the constructor replaces the own `manager` data property
+  with a live accessor over `txHost.tx` via `Object.defineProperty` (TypeORM's
+  methods read `this.manager` per call; a unit spec pins this assumption).
+  `extend()` is overridden (TypeORM's snapshots the manager and re-invokes the
+  subclass constructor with wrong positional args). Entity and `TransactionHost`
+  passed via constructor (`super(Entity, txHost)`); `this.txHost` protected; no
+  `repo` getter. Tree methods not inherited — use
+  `this.manager.getTreeRepository(this.target)`.
 - `IsolationLevel` enum — `src/isolation-level.ts`. Kept in sync with TypeORM's
   own `IsolationLevel` literal type via a **compile-time assertion** in that file
   (`_AssertInSync`); if TypeORM changes its literals, `pnpm typecheck` fails here.
