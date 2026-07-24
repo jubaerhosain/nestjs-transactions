@@ -1,5 +1,23 @@
 # @nestjs-transactions/typeorm
 
+## 5.0.0
+
+### Major Changes
+
+- [#35](https://github.com/jubaerhosain/nestjs-transactions/pull/35) [`73fa7c6`](https://github.com/jubaerhosain/nestjs-transactions/commit/73fa7c6b13e5f5b0650ba97e2b8ba34c62f2cdb6) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - **Breaking:** `TransactionalRepository` is renamed to `NestjsTypeormRepository` and now **extends TypeORM's `Repository<Entity>`**.
+
+  - Subclasses call the full `Repository` API directly — `this.find()`, `this.save()`, `this.createQueryBuilder()`, … — and every inherited method runs on the current transaction's `EntityManager` inside `@Transactional()` (base manager outside).
+  - The `this.repo` getter is removed: replace `this.repo.x()` with `this.x()`. `this.manager` (now the live, transaction-aware manager) and `this.txHost` remain. The constructor signature is unchanged (`super(Entity, txHost)`).
+  - `.extend({ ... })` on subclass instances is now supported and stays transaction-aware (TypeORM's own implementation is overridden — it would pin the manager and mis-invoke the subclass constructor).
+  - Tree entities: `TreeRepository` methods are not inherited — use `this.manager.getTreeRepository(this.target)` or `@InjectRepository`.
+
+- [#35](https://github.com/jubaerhosain/nestjs-transactions/pull/35) [`73fa7c6`](https://github.com/jubaerhosain/nestjs-transactions/commit/73fa7c6b13e5f5b0650ba97e2b8ba34c62f2cdb6) Thanks [@jubaerhosain](https://github.com/jubaerhosain)! - **Breaking:** the two-module setup (`@nestjs/typeorm`'s `TypeOrmModule` + this package's `TransactionalModule`) is merged into a single unified `NestjsTypeormModule` exported from this package.
+
+  - `TransactionalModule` is removed from the public surface. Use `NestjsTypeormModule.forRoot()` / `forRootAsync()` / `forFeature()` instead — same shape as `@nestjs/typeorm`'s module (full options passthrough, including `autoLoadEntities` and `retryAttempts`), plus the transactional options `defaultTxOptions` and `enableTransactionProxy`. `name` names both the DataSource and the transactional connection.
+  - `InjectRepository`, `InjectDataSource`, `InjectEntityManager` and the token helpers are re-exported from `@nestjs/typeorm` (same symbols), so a single import covers the whole workflow.
+  - Removed: attaching to an externally managed DataSource via `TransactionalModule.forRoot({ dataSource, imports })` — `forRoot` now always owns the DataSource.
+  - Migration: replace `import { TypeOrmModule } from '@nestjs/typeorm'` + `import { TransactionalModule } from '@nestjs-transactions/typeorm'` with a single `import { NestjsTypeormModule } from '@nestjs-transactions/typeorm'`; delete `TransactionalModule.forRoot(...)` (move `defaultTxOptions`/`enableTransactionProxy` into `NestjsTypeormModule.forRoot(...)`), and rename both packages' `forFeature(...)` to `NestjsTypeormModule.forFeature(...)`.
+
 ## 4.0.4
 
 ### Patch Changes
