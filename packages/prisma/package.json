@@ -1,6 +1,6 @@
 {
   "name": "@nestjs-transactions/prisma",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Declarative @Transactional() for NestJS + Prisma: inject one transaction-aware Prisma client, drop the $transaction boilerplate. No monkey-patching.",
   "license": "MIT",
   "author": "Jubaer Hosain",
@@ -58,7 +58,7 @@
   "peerDependencies": {
     "@nestjs-cls/transactional": "^3.2.0",
     "@nestjs-cls/transactional-adapter-prisma": "^1.3.0",
-    "@nestjs-transactions/core": "^0.4.3",
+    "@nestjs-transactions/core": "^0.4.4",
     "@nestjs/common": ">= 10 < 12",
     "@nestjs/core": ">= 10 < 12",
     "@prisma/client": "> 4 < 8",
