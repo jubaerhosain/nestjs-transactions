@@ -317,8 +317,12 @@ describe('NestjsTypeormRepository subclasses under every propagation mode (real 
   });
 
   describe('MANDATORY', () => {
-    it('throws TransactionNotActiveError when no transaction is active', () => {
-      expect(() => service.mandatoryProbe('m1')).toThrow(TransactionNotActiveError);
+    it('throws TransactionNotActiveError when no transaction is active', async () => {
+      // The upstream decorator currently throws synchronously; the async
+      // wrapper keeps this green if that ever becomes a rejection.
+      await expect(async () => service.mandatoryProbe('m1')).rejects.toThrow(
+        TransactionNotActiveError,
+      );
     });
 
     it("joins the caller's transaction and sees its uncommitted row through the repo", async () => {

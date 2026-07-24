@@ -65,12 +65,19 @@ export class NestjsTypeormModule {
     // Unique per registration (shared across both halves via this closure), so
     // it can never collide with another root's options provider or a user token.
     const token = Symbol(`nestjs-transactions:typeorm-options:${options.name ?? 'default'}`);
+    // A FRESH holder class per registration. Nest identifies a dynamic module
+    // by its module class plus metadata — by object reference by default, but
+    // under `moduleIdGeneratorAlgorithm: 'deep-hash'` by a metadata hash keyed
+    // per class, where two registrations with byte-identical factory bodies
+    // would collapse into ONE module (the second connection silently reusing
+    // the first's options). A unique class makes each registration's identity
+    // unique under either algorithm.
+    const OptionsHolderModule = class TypeOrmOptionsHolderModule {};
     // ONE shared dynamic module holds the user factory; it is imported by both
-    // consumers below. Nest derives a module's identity from the module class
-    // plus its metadata, so both imports collapse to a single module instance
-    // and the user factory runs exactly once per application.
+    // consumers below, so they collapse to a single module instance and the
+    // user factory runs exactly once per application.
     const optionsModule: DynamicModule = {
-      module: TypeOrmOptionsHolderModule,
+      module: OptionsHolderModule,
       imports: options.imports,
       providers: [
         { provide: token, useFactory: options.useFactory, inject: options.inject },
@@ -129,9 +136,6 @@ export class NestjsTypeormModule {
     };
   }
 }
-
-/** Host class for the shared async-options module (see `forRootAsync`). */
-class TypeOrmOptionsHolderModule {}
 
 /**
  * The unified module always names the transactional connection after the

@@ -148,6 +148,50 @@ describe('NestjsTypeormModule (unified)', () => {
       expect(t0).not.toBe(t2);
       expect(nestForRootAsync.mock.calls[2][0].name).toBe('stats');
     });
+
+    it('gives each registration its OWN options-holder module class', () => {
+      // Under `moduleIdGeneratorAlgorithm: 'deep-hash'` Nest keys dynamic-module
+      // identity per module CLASS; a shared class would let two registrations
+      // with byte-identical factory bodies collapse into one options module.
+      const nestForRootAsync = jest.spyOn(NestTypeOrmModule, 'forRootAsync');
+      const txForRootAsync = jest.spyOn(TransactionalModule, 'forRootAsync');
+
+      NestjsTypeormModule.forRootAsync({ useFactory: () => ({}) });
+      NestjsTypeormModule.forRootAsync({ useFactory: () => ({}) });
+
+      const holderOf = (call: { imports?: any[] }) => (call.imports?.[0] as DynamicModule).module;
+      const [m0, m1] = nestForRootAsync.mock.calls.map((c) => holderOf(c[0]));
+      expect(m0).not.toBe(m1); // distinct identity per registration…
+      expect(m0.name).toBe(m1.name); // …with a stable name for debuggability
+      // …while within ONE registration both halves still share the same class.
+      expect(holderOf(txForRootAsync.mock.calls[0][0])).toBe(m0);
+    });
+
+    it('passes dataSourceFactory through to @nestjs/typeorm', () => {
+      const nestForRootAsync = jest.spyOn(NestTypeOrmModule, 'forRootAsync');
+      const dataSourceFactory = jest.fn();
+
+      NestjsTypeormModule.forRootAsync({ useFactory: () => ({}), dataSourceFactory });
+
+      expect(nestForRootAsync.mock.calls[0][0].dataSourceFactory).toBe(dataSourceFactory);
+    });
+
+    it('registers extraProviders alongside the options factory in the shared module', () => {
+      const nestForRootAsync = jest.spyOn(NestTypeOrmModule, 'forRootAsync');
+      const EXTRA = 'EXTRA_DEP';
+
+      NestjsTypeormModule.forRootAsync({
+        useFactory: (extra: string) => ({ database: extra }),
+        inject: [EXTRA],
+        extraProviders: [{ provide: EXTRA, useValue: 'from-extra' }],
+      });
+
+      // Same module as the options factory, so the factory can inject them.
+      const optionsModule = nestForRootAsync.mock.calls[0][0].imports?.[0] as DynamicModule;
+      expect(optionsModule.providers).toContainEqual({ provide: EXTRA, useValue: 'from-extra' });
+      const optionsProvider = optionsModule.providers?.[0] as FactoryProvider;
+      expect(optionsProvider.inject).toEqual([EXTRA]);
+    });
   });
 
   describe('forFeature', () => {
