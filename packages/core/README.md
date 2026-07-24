@@ -1,5 +1,8 @@
 # @nestjs-transactions/core
 
+[![npm version](https://img.shields.io/npm/v/%40nestjs-transactions%2Fcore)](https://www.npmjs.com/package/@nestjs-transactions/core)
+[![license](https://img.shields.io/npm/l/%40nestjs-transactions%2Fcore)](https://github.com/jubaerhosain/nestjs-transactions/blob/main/LICENSE)
+
 ORM-agnostic building blocks for the `@nestjs-transactions` adapter family, built on [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional).
 
 **You don't import from this package directly** — install it as a peer of an adapter and import everything from there:

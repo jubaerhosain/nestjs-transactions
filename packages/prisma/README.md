@@ -1,5 +1,10 @@
 # @nestjs-transactions/prisma
 
+[![npm version](https://img.shields.io/npm/v/%40nestjs-transactions%2Fprisma)](https://www.npmjs.com/package/@nestjs-transactions/prisma)
+[![npm downloads](https://img.shields.io/npm/dm/%40nestjs-transactions%2Fprisma)](https://www.npmjs.com/package/@nestjs-transactions/prisma)
+[![CI](https://img.shields.io/github/actions/workflow/status/jubaerhosain/nestjs-transactions/ci.yml?branch=main&label=CI)](https://github.com/jubaerhosain/nestjs-transactions/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/%40nestjs-transactions%2Fprisma)](https://github.com/jubaerhosain/nestjs-transactions/blob/main/LICENSE)
+
 **Declarative `@Transactional()` for NestJS + Prisma.** Inject **one** transaction-aware Prisma client, add one decorator, and drop the `$transaction` boilerplate — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. The same decorator-based ergonomics the `@nestjs-transactions/typeorm` adapter offers, for Prisma.
 
 📖 **[Full documentation → jubaerhosain.github.io/nestjs-transactions/docs/prisma](https://jubaerhosain.github.io/nestjs-transactions/docs/prisma)**
