@@ -139,11 +139,12 @@ NestjsTypeormModule.forFeature([Stat], 'stats'),
 async recordStats() { /* wraps only the stats DataSource */ }
 ```
 
-For `forFeature`, the object forms `{ connectionName: 'stats' }` and `{ dataSource: 'stats' }` are
-equivalent to the string form — each side defaults to the other. With the unified module the two
-never differ: `forRoot({ name })` always names the transactional connection after the DataSource.
-(A split combination only makes sense in advanced hand-wired setups built on
-`provideTransactionAwareRepository`.)
+For `forFeature`, the string form and the single-key object forms
+`{ connectionName: 'stats' }` / `{ dataSource: 'stats' }` are all equivalent — each side defaults
+to the other. The unified module always names the transactional connection after the DataSource
+(`forRoot({ name })` sets both), so a **split** `{ connectionName, dataSource }` whose two names
+differ is not supported here — `forFeature` rejects it at startup with a guided error. That
+combination only applies to advanced hand-wired setups built on `provideTransactionAwareRepository`.
 
 ## Transaction hooks
 

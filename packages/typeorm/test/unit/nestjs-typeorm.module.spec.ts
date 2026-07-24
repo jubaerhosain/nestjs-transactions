@@ -100,16 +100,19 @@ describe('NestjsTypeormModule (unified)', () => {
       ).toEqual({ defaultTxOptions: { isolationLevel: 'SERIALIZABLE' } });
     });
 
-    it('scopes the shared options token by connection name', () => {
+    it('uses a unique options token per registration (never collides)', () => {
       const nestForRootAsync = jest.spyOn(NestTypeOrmModule, 'forRootAsync');
 
+      // Two registrations for the SAME name still get distinct symbols.
+      NestjsTypeormModule.forRootAsync({ useFactory: () => ({}) });
       NestjsTypeormModule.forRootAsync({ useFactory: () => ({}) });
       NestjsTypeormModule.forRootAsync({ name: 'stats', useFactory: () => ({}) });
 
-      const defaultToken = nestForRootAsync.mock.calls[0][0].inject?.[0];
-      const statsToken = nestForRootAsync.mock.calls[1][0].inject?.[0];
-      expect(defaultToken).not.toEqual(statsToken);
-      expect(nestForRootAsync.mock.calls[1][0].name).toBe('stats');
+      const [t0, t1, t2] = nestForRootAsync.mock.calls.map((c) => c[0].inject?.[0]);
+      expect(typeof t0).toBe('symbol');
+      expect(t0).not.toBe(t1);
+      expect(t0).not.toBe(t2);
+      expect(nestForRootAsync.mock.calls[2][0].name).toBe('stats');
     });
   });
 
@@ -140,6 +143,24 @@ describe('NestjsTypeormModule (unified)', () => {
       const provider = (dynamicModule.providers as FactoryProvider[])[0];
       expect(provider.provide).toBe(getRepositoryToken(Member, 'stats'));
       expect(nestForFeature).toHaveBeenCalledWith([Member], 'stats');
+    });
+
+    it('rejects a split { connectionName, dataSource } the unified module cannot satisfy', () => {
+      // forRoot({ name }) keys the TransactionHost to the DataSource name, so a
+      // differing connectionName would inject a token that is never registered.
+      expect(() =>
+        NestjsTypeormModule.forFeature([Member], {
+          connectionName: 'reporting',
+          dataSource: 'stats',
+        }),
+      ).toThrow(/split connection is not supported|connectionName 'reporting'/);
+    });
+
+    it('allows the single-key object form (connectionName defaults to dataSource)', () => {
+      expect(() => NestjsTypeormModule.forFeature([Member], { dataSource: 'stats' })).not.toThrow();
+      expect(() =>
+        NestjsTypeormModule.forFeature([Member], { connectionName: 'stats' }),
+      ).not.toThrow();
     });
   });
 });

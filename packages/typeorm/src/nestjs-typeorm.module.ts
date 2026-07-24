@@ -5,6 +5,7 @@ import {
   ForFeatureConnection,
   NestjsTypeormRootAsyncOptions,
   NestjsTypeormRootOptions,
+  normalizeName,
   resolveConnection,
 } from './interfaces';
 import { buildFeatureProviders } from './repository.provider';
@@ -60,7 +61,9 @@ export class NestjsTypeormModule {
    * stripped (DI tokens are computed at module-definition time).
    */
   static forRootAsync(options: NestjsTypeormRootAsyncOptions): DynamicModule {
-    const token = combinedOptionsToken(options.name);
+    // Unique per registration (shared across both halves via this closure), so
+    // it can never collide with another root's options provider or a user token.
+    const token = Symbol(`nestjs-transactions:typeorm-options:${options.name ?? 'default'}`);
     // ONE shared dynamic module holds the user factory; it is imported by both
     // consumers below. Nest derives a module's identity from the module class
     // plus its metadata, so both imports collapse to a single module instance
@@ -107,6 +110,7 @@ export class NestjsTypeormModule {
     entities: EntityClassOrSchema[],
     connection?: ForFeatureConnection,
   ): DynamicModule {
+    assertUnifiedConnection(connection);
     const { providers, exports } = buildFeatureProviders(entities, connection);
     const { dataSource } = resolveConnection(connection);
     return {
@@ -128,11 +132,33 @@ export class NestjsTypeormModule {
 class TypeOrmOptionsHolderModule {}
 
 /**
- * Token for the DI-resolved combined options, scoped by connection name so
- * two `forRootAsync` registrations don't collide.
+ * The unified module always names the transactional connection after the
+ * DataSource (`forRoot({ name })` sets both), so a `forFeature` whose
+ * `connectionName` differs from its `dataSource` injects a `TransactionHost`
+ * token that `forRoot` never registers — a generic "can't resolve
+ * dependencies" failure at startup. Reject that split form here with a guided
+ * message. (The single-key object forms and the string form default one side
+ * to the other, so they never trip this.)
  */
-function combinedOptionsToken(name: string | undefined): string {
-  return `NESTJS_TRANSACTIONS_TYPEORM_OPTIONS_${name ?? 'default'}`;
+function assertUnifiedConnection(connection?: ForFeatureConnection): void {
+  if (typeof connection !== 'object') {
+    return;
+  }
+  const { connectionName, dataSource } = connection;
+  if (connectionName === undefined || dataSource === undefined) {
+    return;
+  }
+  const cn = normalizeName(connectionName);
+  const dsName = normalizeName(typeof dataSource === 'string' ? dataSource : dataSource.name);
+  if (cn !== dsName) {
+    throw new Error(
+      `NestjsTypeormModule.forFeature was given connectionName '${connectionName}' and dataSource ` +
+        `'${dsName ?? 'default'}', but the unified module always names the transactional connection ` +
+        `after the DataSource, so a split connection is not supported here. Use a single name ` +
+        `(string, or one key of the object form), or, for a genuinely split hand-wired setup, ` +
+        `register providers with provideTransactionAwareRepository directly.`,
+    );
+  }
 }
 
 /**
