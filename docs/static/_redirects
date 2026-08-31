@@ -1,0 +1,13 @@
+# Cloudflare Workers static-asset redirects. 2,000 static rules allowed.
+#
+# This file is the reason the site is on Cloudflare rather than GitHub Pages:
+# Pages cannot issue a real 301, only an HTML meta-refresh, which passes link
+# equity poorly and shows the reader a flash of the wrong page.
+#
+# NOTE: _redirects cannot match on hostname. The old GitHub Pages host is
+# consolidated by a redirect stub published to that host — see
+# .github/workflows/legacy-pages-redirect.yml.
+#
+# No rules yet. html_handling: "drop-trailing-slash" in wrangler.jsonc already
+# 307s /docs/typeorm/ -> /docs/typeorm, so trailing-slash variants need no lines
+# here. Add a 301 whenever a page is merged into another or moves URL.
