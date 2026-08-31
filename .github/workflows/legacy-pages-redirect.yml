@@ -1,0 +1,87 @@
+name: Legacy Pages redirect
+
+# The docs site itself is NOT built here any more — Cloudflare Workers Builds
+# builds and deploys it straight from this repo on every push to main. See
+# docs/README.md -> "Hosting".
+#
+# This workflow exists for one narrow reason: npm tarballs are immutable. The
+# `homepage` field and README links inside ALREADY-PUBLISHED versions
+# (@nestjs-transactions/typeorm@5.0.3 and friends) point at
+# https://jubaerhosain.github.io/nestjs-transactions/ forever, and no future
+# release can rewrite them. Switching GitHub Pages off would turn the docs link
+# on every historical npm version page into a 404.
+#
+# So GitHub Pages keeps serving this host — as a redirect stub, not a copy of
+# the site. Leaving the last full build frozen there would instead give two
+# hosts serving identical pages, which is a duplicate-content problem and
+# competes with the canonical host.
+#
+# Safe to delete once the oldest npm version anyone still installs points at
+# nestjs-transactions.jubaer.dev.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/legacy-pages-redirect.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate the redirect stub
+        env:
+          TARGET: https://nestjs-transactions.jubaer.dev/
+        run: |
+          mkdir -p stub
+          # A real <link rel="canonical"> plus a 0-second meta refresh is the
+          # closest GitHub Pages can get to a 301 — it cannot set a status code
+          # or a Location header. The visible link is the fallback for anything
+          # that honours neither.
+          cat > stub/index.html <<HTML
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>nestjs-transactions docs have moved</title>
+              <link rel="canonical" href="${TARGET}" />
+              <meta http-equiv="refresh" content="0; url=${TARGET}" />
+              <meta name="robots" content="noindex, follow" />
+            </head>
+            <body>
+              <h1>These docs have moved</h1>
+              <p>
+                The nestjs-transactions documentation now lives at
+                <a href="${TARGET}">nestjs-transactions.jubaer.dev</a>.
+              </p>
+            </body>
+          </html>
+          HTML
+          # Pages serves 404.html for every unmatched path, so one copy sends
+          # deep links (/docs/typeorm, /docs/prisma/testing) to the new host too
+          # rather than dead-ending them.
+          cp stub/index.html stub/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: stub
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

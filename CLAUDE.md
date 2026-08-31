@@ -25,8 +25,8 @@ pnpm workspace (`pnpm-workspace.yaml` → `packages/*` + `docs`).
 
 **`docs/` — the documentation site.** A **private, non-published**
 [Docusaurus](https://docusaurus.io/) workspace package
-(`@nestjs-transactions/docs`) that deploys to GitHub Pages at
-`https://jubaerhosain.github.io/nestjs-transactions/`. It lives at top-level
+(`@nestjs-transactions/docs`) that deploys to **Cloudflare Workers** at
+`https://nestjs-transactions.jubaer.dev`. It lives at top-level
 `docs/` (deliberately **outside** `packages/*`) and uses **unique script names**
 (`docs:dev`/`docs:build`/`docs:serve`), so `pnpm -r build`/`typecheck`/`test`
 skip it (no matching script) and `pnpm -r publish` skips it (`private: true`) —
@@ -127,14 +127,30 @@ two suites never touch each other's tables.
   Pull requests: write); the default `GITHUB_TOKEN` is deliberately not used
   because token-authored PRs don't trigger CI. If CI stops running on that PR,
   check the `DEPS_PR_TOKEN` secret first.
-- **Docs deploy** (`.github/workflows/docs.yml`): builds `docs/` and deploys to
-  GitHub Pages via `actions/deploy-pages` on pushes to `main` under `docs/**` (or
-  manual `workflow_dispatch`). It is a **PR-independent producer, not a required
-  check**, and never pushes to `main`, so it's orthogonal to the branch ruleset.
-  Requires the one-time repo setting Settings → Pages → Source = "GitHub Actions".
-  The `docs/` dir is excluded from `eslint.config.mjs` `ignores` and its build
-  output from `.prettierignore` specifically so the `lint` job (`eslint .` +
-  `prettier --check .`) stays green — don't remove those ignores.
+- **Docs deploy is NOT a GitHub Actions workflow.** Cloudflare **Workers Builds**
+  watches this repo and builds + deploys `docs/` itself on every push to `main`.
+  There is no deploy workflow to read, so the build command, root directory and
+  build variables live in the Cloudflare dashboard — they are transcribed in
+  `docs/README.md` → "Hosting", and **that table is the only record in the repo.
+  Update it in the same PR as any dashboard change.** `docs/wrangler.jsonc` holds
+  the other half (asset routing) and is commented inline.
+  - `.github/workflows/legacy-pages-redirect.yml` is the one remaining Pages
+    workflow. It publishes a **redirect stub**, not the site: already-published npm
+    tarballs are immutable, so their `homepage` and README links point at
+    `jubaerhosain.github.io/nestjs-transactions` forever. Requires the one-time
+    repo setting Settings → Pages → Source = "GitHub Actions".
+  - The `docs/` dir is excluded from `eslint.config.mjs` `ignores` and its build
+    output from `.prettierignore` specifically so the `lint` job (`eslint .` +
+    `prettier --check .`) stays green — don't remove those ignores.
+  - **`docs/static/_headers` and `docs/static/_redirects` are the only
+    hand-written files in `static/`** (everything else there is an asset or is
+    generated into `build/`). Docusaurus copies `static/` verbatim, which is how
+    Cloudflare receives them. `prettier --check .` skips both — no parser matches
+    an extensionless file — so they need no `.prettierignore` entry.
+  - **`docs` `baseUrl` must stay `/`.** On the old GitHub Pages subpath, the
+    generated `robots.txt` landed at `/nestjs-transactions/robots.txt`, which no
+    crawler fetches, so the site had zero indexed pages. Verify after any host
+    change: `grep Sitemap: docs/build/robots.txt`.
 - **Docs changes need a changeset only when they touch published packages.** The
   docs site itself is private (no changeset). But editing a published
   `package.json` (e.g. the `homepage` field) or a package README **is** a

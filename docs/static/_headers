@@ -1,0 +1,28 @@
+# Cloudflare Workers static-asset headers.
+#
+# One of exactly two hand-written files in static/ (the other is _redirects).
+# Everything else here is either an asset Docusaurus copies verbatim or is
+# generated into build/ at build time. Docusaurus copies static/ into build/
+# unchanged, which is how these reach the edge.
+
+# Hashed filenames (main.3c2e788a.js, styles.abc123.css) — the hash changes when
+# the content does, so these can be cached permanently.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/img/*
+  Cache-Control: public, max-age=86400
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+
+# Short TTL so a re-crawl picks up new pages and lastmod values within the hour
+# rather than serving a stale index of the site.
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/robots.txt
+  Cache-Control: public, max-age=3600

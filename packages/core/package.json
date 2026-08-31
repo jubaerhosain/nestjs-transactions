@@ -9,7 +9,7 @@
     "url": "git+https://github.com/jubaerhosain/nestjs-transactions.git",
     "directory": "packages/core"
   },
-  "homepage": "https://jubaerhosain.github.io/nestjs-transactions/",
+  "homepage": "https://nestjs-transactions.jubaer.dev/",
   "bugs": {
     "url": "https://github.com/jubaerhosain/nestjs-transactions/issues"
   },

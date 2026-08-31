@@ -7,7 +7,7 @@
 
 **Declarative `@Transactional()` for NestJS + Prisma.** Inject **one** transaction-aware Prisma client, add one decorator, and drop the `$transaction` boilerplate — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. The same decorator-based ergonomics the `@nestjs-transactions/typeorm` adapter offers, for Prisma.
 
-📖 **[Full documentation → jubaerhosain.github.io/nestjs-transactions/docs/prisma](https://jubaerhosain.github.io/nestjs-transactions/docs/prisma)**
+📖 **[Full documentation → nestjs-transactions.jubaer.dev/docs/prisma](https://nestjs-transactions.jubaer.dev/docs/prisma)**
 
 ## Install
 
@@ -75,7 +75,7 @@ If `signUp` throws, everything rolls back — including writes made in `AuditSer
 - **Prisma 7 / driver adapters** — works unchanged; the API is generic over your client type.
 - **Testing** — a no-op module for unit tests without a database.
 
-See the **[full documentation](https://jubaerhosain.github.io/nestjs-transactions/docs/prisma)** for details on all of the above, plus caveats.
+See the **[full documentation](https://nestjs-transactions.jubaer.dev/docs/prisma)** for details on all of the above, plus caveats.
 
 ## License
 

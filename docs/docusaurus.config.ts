@@ -4,8 +4,15 @@ import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
-const url = 'https://jubaerhosain.github.io';
-const baseUrl = '/nestjs-transactions/';
+const url = 'https://nestjs-transactions.jubaer.dev';
+// Must stay '/'. The site is served from its own subdomain, so every generated
+// URL — canonical, sitemap <loc>, and above all robots.txt — sits at the host
+// root. Under the old GitHub Pages subpath the emit-robots-txt plugin below
+// wrote a correct robots.txt to /nestjs-transactions/robots.txt, which no
+// crawler ever fetches; the only file Google reads is the one at the host root,
+// and that one had no Sitemap: line. That is why the site had zero indexed
+// pages. Reintroducing a subpath would reintroduce the bug.
+const baseUrl = '/';
 const repoUrl = 'https://github.com/jubaerhosain/nestjs-transactions';
 
 const config: Config = {
@@ -13,11 +20,15 @@ const config: Config = {
   tagline: 'Declarative @Transactional() for NestJS — TypeORM & Prisma, no monkey-patching',
   favicon: 'img/favicon.svg',
 
-  // Production URL and base path for a GitHub Pages project site.
+  // Production URL and base path. Hosted on Cloudflare Workers static assets
+  // (docs/wrangler.jsonc), deployed by Workers Builds from main.
   url,
   baseUrl,
   organizationName: 'jubaerhosain',
   projectName: 'nestjs-transactions',
+  // Kept false, and wrangler.jsonc's html_handling: "drop-trailing-slash"
+  // matches it at the edge so the slashed form of every page 307s here instead
+  // of resolving as a second, duplicate URL.
   trailingSlash: false,
 
   onBrokenLinks: 'throw',
@@ -53,7 +64,10 @@ const config: Config = {
 
   plugins: [
     // Emit robots.txt at build time so the sitemap URL is derived from
-    // url + baseUrl instead of being hardcoded in a static file.
+    // url + baseUrl instead of being hardcoded in a static file. With
+    // baseUrl '/' this lands at build/robots.txt and is therefore served at
+    // the host root, which is the only place a crawler looks for it.
+    // Verify after any host change: `grep Sitemap: docs/build/robots.txt`.
     () => ({
       name: 'emit-robots-txt',
       postBuild({ outDir }: { outDir: string }) {
@@ -72,15 +86,22 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl: `${repoUrl}/tree/main/docs/`,
+          // Read from each file's git log — see the sitemap note below.
+          showLastUpdateTime: true,
         },
         blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },
         sitemap: {
-          changefreq: 'weekly',
-          priority: 0.5,
           filename: 'sitemap.xml',
+          // lastmod is the only one of the three sitemap hints Google actually
+          // uses, and only when the values are truthful and differ per URL.
+          // changefreq/priority are ignored outright, and ours emitted an
+          // identical 'weekly'/0.5 on every URL, so they are dropped.
+          lastmod: 'date',
+          changefreq: null,
+          priority: null,
         },
       } satisfies Preset.Options,
     ],

@@ -9,7 +9,7 @@
     "url": "git+https://github.com/jubaerhosain/nestjs-transactions.git",
     "directory": "packages/typeorm"
   },
-  "homepage": "https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm",
+  "homepage": "https://nestjs-transactions.jubaer.dev/docs/typeorm",
   "bugs": {
     "url": "https://github.com/jubaerhosain/nestjs-transactions/issues"
   },
