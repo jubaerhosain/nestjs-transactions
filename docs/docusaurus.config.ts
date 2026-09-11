@@ -122,8 +122,13 @@ const config: Config = {
       { name: 'twitter:card', content: 'summary_large_image' },
       { property: 'og:site_name', content: 'nestjs-transactions' },
       { property: 'og:type', content: 'website' },
-      // Google Search Console ownership verification (URL-prefix property).
-      // static/googlebb31fc13daeeaa3d.html is the file-based fallback.
+      // Google Search Console ownership verification (URL-prefix property for
+      // https://nestjs-transactions.jubaer.dev). This tag is the ONLY method
+      // that works on this host: Google's HTML-file method fetches
+      // /<token>.html, and wrangler.jsonc's html_handling:
+      // "drop-trailing-slash" strips the .html extension, so that URL 307s to
+      // the extensionless path and the verifier never sees a 200 at the URL it
+      // asked for. Removing this tag unverifies the property.
       {
         name: 'google-site-verification',
         content: 'WDIso36CdjljXxyIDEqIiAvlCKWQWbyJoDtq2gPEmbk',
