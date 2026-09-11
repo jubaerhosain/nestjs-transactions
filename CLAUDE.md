@@ -78,8 +78,8 @@ Run via pnpm's filter (unique script names so `pnpm -r` never picks them up):
 
 | Command                                                  | What it does                                                           |
 | -------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm --filter @nestjs-transactions/docs docs:dev`       | Docusaurus dev server at `http://localhost:3000/nestjs-transactions/`. |
-| `pnpm --filter @nestjs-transactions/docs docs:build`     | Production build → `docs/build` (used by the deploy workflow).         |
+| `pnpm --filter @nestjs-transactions/docs docs:dev`       | Docusaurus dev server at `http://localhost:3000/`.                     |
+| `pnpm --filter @nestjs-transactions/docs docs:build`     | Production build → `docs/build` (what Cloudflare Workers Builds runs). |
 | `pnpm --filter @nestjs-transactions/docs docs:serve`     | Serve the production build locally (verifies the real base URL).       |
 | `pnpm --filter @nestjs-transactions/docs docs:clear`     | `docusaurus clear` — wipe `docs/build` + `docs/.docusaurus` caches.    |
 | `pnpm --filter @nestjs-transactions/docs docs:typecheck` | `tsc` — type-check the site (config, sidebars, React pages).           |

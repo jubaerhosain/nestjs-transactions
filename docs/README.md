@@ -44,18 +44,18 @@ other half lives in the Cloudflare dashboard, under the Worker →
 Settings → Builds, and **nothing in the repo can enforce it**, so this table is
 the only record. Keep it in sync in the same PR as any dashboard change:
 
-| Setting                                  | Value                                                                                                                                                           |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Worker name                              | `nestjs-transactions-docs`                                                                                                                                      |
-| Repository                               | `jubaerhosain/nestjs-transactions`                                                                                                                              |
-| Production branch                        | `main`                                                                                                                                                          |
-| Root directory                           | `/` _(repo root — a pnpm workspace install must resolve `pnpm-workspace.yaml`)_                                                                                 |
-| Build variable `SKIP_DEPENDENCY_INSTALL` | `1`                                                                                                                                                             |
-| Build variable `PNPM_VERSION`            | `11.10.0`                                                                                                                                                       |
-| Build command                            | `git fetch --unshallow \|\| true && pnpm install --frozen-lockfile --filter @nestjs-transactions/docs... && pnpm --filter @nestjs-transactions/docs docs:build` |
-| Deploy command                           | `npx wrangler@4 deploy --config docs/wrangler.jsonc`                                                                                                            |
-| Non-production branch deploy command     | `npx wrangler@4 versions upload --config docs/wrangler.jsonc`                                                                                                   |
-| Custom Domain                            | `nestjs-transactions.jubaer.dev` _(Worker → Settings → Domains & Routes)_                                                                                       |
+| Setting                                  | Value                                                                                                                                                                                                                      |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Worker name                              | `nestjs-transactions-docs`                                                                                                                                                                                                 |
+| Repository                               | `jubaerhosain/nestjs-transactions`                                                                                                                                                                                         |
+| Production branch                        | `main`                                                                                                                                                                                                                     |
+| Root directory                           | `/` _(repo root — a pnpm workspace install must resolve `pnpm-workspace.yaml`)_                                                                                                                                            |
+| Build variable `SKIP_DEPENDENCY_INSTALL` | `1`                                                                                                                                                                                                                        |
+| Build variable `PNPM_VERSION`            | `11.10.0`                                                                                                                                                                                                                  |
+| Build command                            | `if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then git fetch --unshallow; fi && pnpm install --frozen-lockfile --filter @nestjs-transactions/docs... && pnpm --filter @nestjs-transactions/docs docs:build` |
+| Deploy command                           | `npx wrangler@4 deploy --config docs/wrangler.jsonc`                                                                                                                                                                       |
+| Non-production branch deploy command     | `npx wrangler@4 versions upload --config docs/wrangler.jsonc`                                                                                                                                                              |
+| Custom Domain                            | `nestjs-transactions.jubaer.dev` _(Worker → Settings → Domains & Routes)_                                                                                                                                                  |
 
 Each of those is load-bearing:
 
@@ -64,8 +64,11 @@ Each of those is load-bearing:
   page reports the clone's single commit date instead of its own. That silently
   turns both `sitemap.xml`'s `lastmod` and the "Last updated" footer into the
   build date, telling Google all 23 pages change on every deploy — a false signal
-  that is worse than omitting `lastmod` entirely. `|| true` keeps an
-  already-complete clone from failing the build.
+  that is worse than omitting `lastmod` entirely. The `is-shallow-repository`
+  guard — not a `|| true` — is what keeps an already-complete clone from failing
+  the build: a fetch that is actually needed and actually fails must fail the
+  build, because the published site would otherwise carry the wrong dates
+  without anything saying so.
 - **`SKIP_DEPENDENCY_INSTALL=1`** — Cloudflare's automatic install ignores the
   root directory in a pnpm workspace and installs every project, which drags in
   the Prisma engines this site has no use for. The explicit
@@ -104,6 +107,10 @@ curl -sI https://nestjs-transactions.jubaer.dev/nope         | head -1    # 404,
 
 `jubaerhosain.github.io/nestjs-transactions` still serves a **redirect stub**
 (`.github/workflows/legacy-pages-redirect.yml`) rather than being switched off.
+The stub's `404.html` — which Pages serves for every deep link — strips the
+`/nestjs-transactions` prefix from the requested path and sends the reader to the
+same page on the new host, so `/nestjs-transactions/docs/typeorm` lands on
+`/docs/typeorm` rather than on the homepage.
 npm tarballs are immutable, so the `homepage` field and README links inside
 already-published versions point there permanently and no future release can
 rewrite them. Serving the last full build there instead would give two hosts

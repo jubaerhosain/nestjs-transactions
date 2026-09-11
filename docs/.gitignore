@@ -3,6 +3,9 @@
 /.docusaurus
 /node_modules
 
+# Wrangler's local state, written by `npx wrangler@4 deploy --dry-run`
+/.wrangler
+
 # Generated from og-card.svg by scripts/generate-og-card.mjs
 /static/img/og-card.png
 
