@@ -1,0 +1,29 @@
+{
+  // Cloudflare Workers static-asset hosting for the Docusaurus site.
+  // Live at https://nestjs-transactions.jubaer.dev (Custom Domain on this Worker).
+  //
+  // Deployed by Workers Builds (Cloudflare's Git integration) on every push to
+  // main, NOT by GitHub Actions. The dashboard build settings are the other half
+  // of this config and are recorded in docs/README.md -> "Hosting" — keep them in
+  // sync, because nothing here can describe them.
+  "name": "nestjs-transactions-docs",
+  "compatibility_date": "2026-09-01",
+
+  // No "main": this is assets-only, so no Worker code runs and no request is
+  // billable. Adding an entrypoint later would change both facts.
+  "assets": {
+    "directory": "./build",
+
+    // Docusaurus emits its own build/404.html. Serve that with a real 404
+    // status. The alternative, "single-page-application", would return
+    // index.html with a 200 for every unknown path — a soft 404, which Google
+    // treats as a quality problem rather than a missing page.
+    "not_found_handling": "404-page",
+
+    // docusaurus.config.ts sets trailingSlash: false and the build emits flat
+    // files (build/docs/typeorm.html). The default "auto-trailing-slash" would
+    // then serve BOTH /docs/typeorm and /docs/typeorm/ with a 200 — two URLs,
+    // one page. This 307s the slashed form to the canonical one instead.
+    "html_handling": "drop-trailing-slash",
+  },
+}

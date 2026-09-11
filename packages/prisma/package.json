@@ -9,7 +9,7 @@
     "url": "git+https://github.com/jubaerhosain/nestjs-transactions.git",
     "directory": "packages/prisma"
   },
-  "homepage": "https://jubaerhosain.github.io/nestjs-transactions/docs/prisma",
+  "homepage": "https://nestjs-transactions.jubaer.dev/docs/prisma",
   "bugs": {
     "url": "https://github.com/jubaerhosain/nestjs-transactions/issues"
   },

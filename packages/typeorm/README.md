@@ -7,7 +7,7 @@
 
 **Declarative `@Transactional()` for NestJS + TypeORM.** Keep `@InjectRepository(Entity)`, add one decorator — transactions propagate through CLS (`AsyncLocalStorage`) across services. Standard NestJS dependency injection built on the actively maintained [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional): **no monkey-patching**. Inspired by [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional) — a decorator-based approach many NestJS developers already know, but that is no longer maintained.
 
-📖 **[Full documentation → jubaerhosain.github.io/nestjs-transactions/docs/typeorm](https://jubaerhosain.github.io/nestjs-transactions/docs/typeorm)**
+📖 **[Full documentation → nestjs-transactions.jubaer.dev/docs/typeorm](https://nestjs-transactions.jubaer.dev/docs/typeorm)**
 
 ## Install
 
