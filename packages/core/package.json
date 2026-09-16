@@ -72,9 +72,9 @@
   },
   "devDependencies": {
     "@nestjs-cls/transactional": "^3.3.0",
-    "@nestjs/common": "^11.2.3",
-    "@nestjs/core": "^11.2.3",
-    "@nestjs/testing": "^11.2.3",
+    "@nestjs/common": "^11.2.5",
+    "@nestjs/core": "^11.2.5",
+    "@nestjs/testing": "^11.2.5",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.13.4",
     "jest": "^29.7.0",
