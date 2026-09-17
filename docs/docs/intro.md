@@ -1,52 +1,23 @@
 ---
-title: nestjs-transactions
-description: Declarative @Transactional() for NestJS with TypeORM and Prisma. Transactions propagate through CLS across services, with zero monkey-patching.
+title: Introduction
+description: Start here — which nestjs-transactions adapter to install for TypeORM or Prisma, what every page of these docs covers, and where to read first.
 slug: /
 sidebar_label: Introduction
 ---
 
-# nestjs-transactions
+# Introduction
 
-**Declarative transaction propagation for NestJS with vanilla ergonomics.** Keep
-`@InjectRepository(Entity)`, add `@Transactional()`, done — transactions
-propagate through CLS (`AsyncLocalStorage`), across services, with **zero
-monkey-patching**.
+These are the reference docs for `nestjs-transactions`. This page is the map:
+which package to install for your ORM, what the rest of the documentation
+covers, and where to start reading. If you would rather have working code in
+front of you first, skip ahead to
+[Getting started](./getting-started.md).
 
-```ts
-@Injectable()
-export class MemberService {
-  constructor(
-    @InjectRepository(Member) private readonly repo: Repository<Member>,
-    private readonly accounting: AccountingService,
-  ) {}
-
-  @Transactional()
-  async register(name: string) {
-    const member = await this.repo.save({ name });
-    await this.accounting.openAccount(member); // joins the SAME transaction
-    return member; // no decorator needed there
-  }
-}
-```
-
-## Why
-
-Transaction management shouldn't leak into your code. You keep your
-`@InjectRepository(Entity)` repositories, add `@Transactional()` to a method, and
-the repository quietly runs on the active transaction — no `EntityManager` or
-`queryRunner` threaded through your services, no boilerplate.
-
-- **Invisible propagation.** Transactions flow through CLS (`AsyncLocalStorage`),
-  so a call several services deep joins the same transaction and rolls back
-  together.
-- **Plain dependency injection.** It's built on the actively maintained
-  [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional)
-  — TypeORM's classes are never patched at startup, so a library upgrade can't
-  break you unexpectedly.
-- **Familiar ergonomics.** Inspired by
-  [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional)
-  — a decorator-based approach many NestJS developers already know, but that is
-  no longer maintained.
+Transaction management shouldn't leak into your code. You keep your existing
+repositories, add `@Transactional()` to a method, and everything it calls —
+however many services deep — quietly runs on the same transaction and rolls back
+together. [Concepts](./concepts.md) explains how that works at runtime, and why
+nothing is patched at startup to make it happen.
 
 ## Packages
 
@@ -62,8 +33,21 @@ lifecycle hooks — from a single import. Each ships one module to wire it up:
 the TypeORM adapter's unified `NestjsTypeormModule` (which also owns the
 database connection), and the Prisma adapter's `TransactionalModule`.
 
-## Next steps
+## How these docs are organised
 
-- **[Getting started](./getting-started.md)** — install and wire up your first transaction.
-- **[Concepts](./concepts.md)** — how CLS-based propagation works, and why there's no monkey-patching.
-- **[TypeORM adapter](./typeorm/index.md)** / **[Prisma adapter](./prisma/index.md)** — the full API for each ORM.
+- **[Getting started](./getting-started.md)** — install the adapter for your ORM
+  and wire up a first transaction.
+- **[Concepts](./concepts.md)** — what CLS-based propagation does at runtime,
+  and what "no monkey-patching" buys you.
+- **[TypeORM adapter](./typeorm/index.md)** — the full manual: propagation
+  modes, isolation levels, multiple data sources, lifecycle hooks, programmatic
+  control, custom repositories, testing, and migrating off
+  [`typeorm-transactional`](https://www.npmjs.com/package/typeorm-transactional).
+- **[Prisma adapter](./prisma/index.md)** — the full manual: propagation modes,
+  transaction options, multiple connections, lifecycle hooks, programmatic
+  control, and testing.
+- **[Writing an adapter](./core/adapter-authors.md)** — the
+  `@nestjs-transactions/core` SPI, if you want to support another ORM.
+
+Each adapter's manual ends with a **Caveats** page. Read it before you ship —
+it covers the cases where propagation does not apply.

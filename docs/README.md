@@ -115,3 +115,20 @@ npm tarballs are immutable, so the `homepage` field and README links inside
 already-published versions point there permanently and no future release can
 rewrite them. Serving the last full build there instead would give two hosts
 identical content — duplicate content competing with the canonical host.
+
+The stub's search-engine markup is deliberate and easy to get wrong:
+
+- **`index.html` carries a `rel="canonical"` and no `noindex`.** Pages cannot
+  issue a 301, so the canonical is the only signal that consolidates the old URL
+  into the new host — and `noindex` throws that consolidation away. The two are
+  contradictory, and Google warns that a `noindex`ed URL chosen as a cluster's
+  canonical can carry its `noindex` to the target. Set one or the other, never
+  both.
+- **`404.html` carries neither.** It is served for _every_ old deep link, so any
+  canonical it declared could only name the new homepage — falsely claiming that
+  `/nestjs-transactions/docs/typeorm` duplicates the new site's root. The
+  path-preserving redirect it performs instead is both stronger and correctly
+  targeted.
+
+`on.push.paths` limits the workflow to changes to its own file, so editing the
+stub redeploys it on merge to `main`; `workflow_dispatch` re-runs it otherwise.
