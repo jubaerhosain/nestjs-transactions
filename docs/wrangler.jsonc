@@ -9,6 +9,15 @@
   "name": "nestjs-transactions-docs",
   "compatibility_date": "2026-09-01",
 
+  // All traffic arrives through the Custom Domain, so the workers.dev route is
+  // switched off. Left on, nestjs-transactions-docs.<account>.workers.dev is a
+  // second host answering with byte-identical HTML — and .workers.dev hostnames
+  // are discoverable through certificate-transparency logs, so "nothing links to
+  // it" is not the same as "nothing finds it". Preview URLs from
+  // `wrangler versions upload` on non-production branches are a separate setting
+  // and stay enabled.
+  "workers_dev": false,
+
   // No "main": this is assets-only, so no Worker code runs and no request is
   // billable. Adding an entrypoint later would change both facts.
   "assets": {
